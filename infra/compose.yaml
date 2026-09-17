@@ -1,0 +1,67 @@
+name: ${COMPOSE_PROJECT_NAME:-classmate-iot}
+
+services:
+  mosquitto:
+    image: ${MOSQUITTO_IMAGE:-eclipse-mosquitto:2.0.22}
+    restart: unless-stopped
+    ports:
+      - "${POC_BIND_ADDRESS:-127.0.0.1}:${MQTT_PORT:-1883}:1883"
+    volumes:
+      - ./infra/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-logs:/mosquitto/log
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h 127.0.0.1 -p 1883 -t '$$SYS/broker/uptime' -C 1 -W 3 >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 4s
+      retries: 12
+      start_period: 5s
+    networks:
+      - backend
+
+  node-red:
+    build:
+      context: .
+      dockerfile: nodered/Dockerfile
+      args:
+        NODE_RED_IMAGE: ${NODE_RED_IMAGE:-nodered/node-red:4.0.9-22}
+    restart: unless-stopped
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ:-Europe/Rome}
+      MQTT_HOST: mosquitto
+      MQTT_PORT: "1883"
+      SQLITE_PATH: /data/sqlite/classmate.db
+    ports:
+      - "127.0.0.1:${NODE_RED_PORT:-1880}:1880"
+    volumes:
+      - ./nodered/flows.json:/data/flows.json:ro
+      - ./nodered/settings.js:/data/settings.js:ro
+      - sqlite-data:/data/sqlite
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          require('http').get('http://127.0.0.1:1880/healthz', response =>
+          process.exit(response.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))
+      interval: 5s
+      timeout: 4s
+      retries: 18
+      start_period: 10s
+    networks:
+      - backend
+
+networks:
+  backend:
+
+volumes:
+  mosquitto-data:
+    name: classmate-mosquitto-data
+  mosquitto-logs:
+    name: classmate-mosquitto-logs
+  sqlite-data:
+    name: classmate-sqlite

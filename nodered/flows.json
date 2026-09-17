@@ -1,0 +1,49 @@
+[
+  {
+    "id": "system-health-tab",
+    "type": "tab",
+    "label": "System Health",
+    "disabled": false,
+    "info": "Foundation health endpoint for the local Compose stack."
+  },
+  {
+    "id": "health-request",
+    "type": "http in",
+    "z": "system-health-tab",
+    "name": "GET /healthz",
+    "url": "/healthz",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 150,
+    "y": 100,
+    "wires": [["health-response-body"]]
+  },
+  {
+    "id": "health-response-body",
+    "type": "function",
+    "z": "system-health-tab",
+    "name": "Healthy",
+    "func": "msg.statusCode = 200;\nmsg.headers = { 'content-type': 'application/json' };\nmsg.payload = { status: 'ok', service: 'node-red' };\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 350,
+    "y": 100,
+    "wires": [["health-response"]]
+  },
+  {
+    "id": "health-response",
+    "type": "http response",
+    "z": "system-health-tab",
+    "name": "200 JSON",
+    "statusCode": "",
+    "headers": {},
+    "x": 550,
+    "y": 100,
+    "wires": []
+  }
+]

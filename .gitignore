@@ -1,2 +1,19 @@
 /openspec
 .agents
+/tests
+/docs
+
+README.md
+
+# Local runtime configuration and credentials
+infra/config/local.env
+infra/secrets/*
+!infra/secrets/README.md
+!infra/secrets/*.example
+firmware/include/secrets.h
+firmware/wokwi-secrets.toml
+
+# Local service state and exports
+infra/data/
+database/backups/
+nodered/.config.*
