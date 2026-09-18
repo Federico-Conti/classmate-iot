@@ -2,16 +2,28 @@ name: ${COMPOSE_PROJECT_NAME:-classmate-iot}
 
 services:
   mosquitto:
-    image: ${MOSQUITTO_IMAGE:-eclipse-mosquitto:2.0.22}
+    build:
+      context: .
+      dockerfile: infra/mosquitto/Dockerfile
+      args:
+        MOSQUITTO_IMAGE: ${MOSQUITTO_IMAGE:-eclipse-mosquitto:2.0.22}
     restart: unless-stopped
+    environment:
+      MQTT_WEARABLE_USERNAME: ${MQTT_WEARABLE_USERNAME:-esp32-001}
+      MQTT_NODERED_USERNAME: ${MQTT_NODERED_USERNAME:-node-red}
+      MQTT_PARENT_USERNAME: ${MQTT_PARENT_USERNAME:-parent-poc}
     ports:
       - "${POC_BIND_ADDRESS:-127.0.0.1}:${MQTT_PORT:-1883}:1883"
     volumes:
       - ./infra/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - mosquitto-data:/mosquitto/data
       - mosquitto-logs:/mosquitto/log
+    secrets:
+      - mqtt_wearable_password
+      - mqtt_nodered_password
+      - mqtt_parent_password
     healthcheck:
-      test: ["CMD-SHELL", "mosquitto_sub -h 127.0.0.1 -p 1883 -t '$$SYS/broker/uptime' -C 1 -W 3 >/dev/null 2>&1"]
+      test: ["CMD-SHELL", "mosquitto_sub -h 127.0.0.1 -p 1883 -u \"$${MQTT_NODERED_USERNAME}\" -P \"$$(cat /run/secrets/mqtt_nodered_password)\" -t '$$SYS/broker/uptime' -C 1 -W 3 >/dev/null 2>&1"]
       interval: 5s
       timeout: 4s
       retries: 12
@@ -33,6 +45,8 @@ services:
       TZ: ${TZ:-Europe/Rome}
       MQTT_HOST: mosquitto
       MQTT_PORT: "1883"
+      MQTT_USERNAME: ${MQTT_NODERED_USERNAME:-node-red}
+      MQTT_PASSWORD_FILE: /run/secrets/mqtt_nodered_password
       SQLITE_PATH: /data/sqlite/classmate.db
     ports:
       - "127.0.0.1:${NODE_RED_PORT:-1880}:1880"
@@ -40,6 +54,8 @@ services:
       - ./nodered/flows.json:/data/flows.json:ro
       - ./nodered/settings.js:/data/settings.js:ro
       - sqlite-data:/data/sqlite
+    secrets:
+      - mqtt_nodered_password
     healthcheck:
       test:
         - CMD
@@ -58,10 +74,18 @@ services:
 networks:
   backend:
 
+secrets:
+  mqtt_wearable_password:
+    file: ${MQTT_WEARABLE_PASSWORD_FILE:-./infra/secrets/mqtt_wearable_password}
+  mqtt_nodered_password:
+    file: ${MQTT_NODERED_PASSWORD_FILE:-./infra/secrets/mqtt_nodered_password}
+  mqtt_parent_password:
+    file: ${MQTT_PARENT_PASSWORD_FILE:-./infra/secrets/mqtt_parent_password}
+
 volumes:
   mosquitto-data:
-    name: classmate-mosquitto-data
+    name: ${MOSQUITTO_DATA_VOLUME:-classmate-mosquitto-data}
   mosquitto-logs:
-    name: classmate-mosquitto-logs
+    name: ${MOSQUITTO_LOGS_VOLUME:-classmate-mosquitto-logs}
   sqlite-data:
-    name: classmate-sqlite
+    name: ${SQLITE_DATA_VOLUME:-classmate-sqlite}

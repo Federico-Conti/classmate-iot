@@ -3,7 +3,11 @@
 /tests
 /docs
 
-README.md
+# Local contract verification assets
+contracts/mqtt/fixtures/
+contracts/mqtt/validate-fixtures.mjs
+
+*.md
 
 # Local runtime configuration and credentials
 infra/config/local.env

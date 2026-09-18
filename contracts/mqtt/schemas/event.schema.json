@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://classmate.local/schemas/mqtt/v1/event.schema.json",
+  "title": "ClassMate attendance event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "eventId", "childId", "type", "occurredAt"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "eventId": { "type": "string", "format": "uuid" },
+    "childId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+    "type": { "type": "string", "enum": ["entry", "exit"] },
+    "occurredAt": { "type": "string", "format": "date-time" }
+  }
+}

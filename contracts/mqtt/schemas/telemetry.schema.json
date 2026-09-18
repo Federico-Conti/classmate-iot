@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://classmate.local/schemas/mqtt/v1/telemetry.schema.json",
+  "title": "ClassMate wearable telemetry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "deviceId",
+    "bootId",
+    "sequence",
+    "deviceUptimeMs",
+    "observedAt",
+    "wifi"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "deviceId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{2,63}$" },
+    "bootId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{8,64}$" },
+    "sequence": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+    "deviceUptimeMs": { "type": "integer", "minimum": 0 },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "wifi": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetObserved", "rssiDbm"],
+      "properties": {
+        "targetObserved": { "type": "boolean" },
+        "rssiDbm": { "type": ["integer", "null"], "minimum": -127, "maximum": 0 }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "targetObserved": { "const": true },
+            "rssiDbm": { "type": "integer", "minimum": -127, "maximum": 0 }
+          }
+        },
+        {
+          "properties": {
+            "targetObserved": { "const": false },
+            "rssiDbm": { "type": "null" }
+          }
+        }
+      ]
+    }
+  }
+}
