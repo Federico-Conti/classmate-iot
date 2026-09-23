@@ -1,0 +1,10 @@
+{
+  "name": "classmate-db",
+  "version": "1.0.0",
+  "private": true,
+  "node-red": {
+    "nodes": {
+      "classmate-db": "classmate-db.js"
+    }
+  }
+}

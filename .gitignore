@@ -1,6 +1,6 @@
 /openspec
 .agents
-/tests
+tests
 /docs
 
 # Local contract verification assets
@@ -10,7 +10,6 @@ contracts/mqtt/validate-fixtures.mjs
 *.md
 
 # Local runtime configuration and credentials
-infra/config/local.env
 infra/secrets/*
 !infra/secrets/README.md
 !infra/secrets/*.example
@@ -19,5 +18,4 @@ firmware/wokwi-secrets.toml
 
 # Local service state and exports
 infra/data/
-database/backups/
 nodered/.config.*

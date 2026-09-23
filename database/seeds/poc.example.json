@@ -1,0 +1,35 @@
+{
+  "parents": [
+    {
+      "id": "parent-001",
+      "code": "PARENT-001",
+      "name": "Mario",
+      "surname": "Rossi"
+    }
+  ],
+  "children": [
+    {
+      "id": "child-001",
+      "name": "Giulia",
+      "surname": "Rossi"
+    }
+  ],
+  "associations": [
+    {
+      "parentId": "parent-001",
+      "childId": "child-001"
+    }
+  ],
+  "devices": [
+    {
+      "id": "esp32-001",
+      "childId": "child-001",
+      "firmwareVersion": "poc"
+    }
+  ],
+  "broker": {
+    "host": "192.168.1.15",
+    "port": 1883,
+    "parentUsername": "parent-poc"
+  }
+}

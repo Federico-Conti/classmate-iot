@@ -1,0 +1,31 @@
+<script type="text/javascript">
+    RED.nodes.registerType("classmate-db", {
+        category: "storage",
+        color: "#d9d9d9",
+        defaults: {
+            name: { value: "" },
+            database: { value: "/data/sqlite/classmate.db", required: true },
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "db.svg",
+        label: function () {
+            return this.name || "ClassMate SQLite";
+        },
+    });
+</script>
+
+<script type="text/html" data-template-name="classmate-db">
+    <div class="form-row">
+        <label for="node-input-name">Name</label>
+        <input type="text" id="node-input-name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-database">Database</label>
+        <input type="text" id="node-input-database">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="classmate-db">
+    <p>Runs a named, parameterized ClassMate database operation from <code>msg.dbOperation</code> and <code>msg.params</code>.</p>
+</script>

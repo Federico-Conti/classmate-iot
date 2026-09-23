@@ -1,4 +1,4 @@
-name: ${COMPOSE_PROJECT_NAME:-classmate-iot}
+name: ${COMPOSE_PROJECT_NAME}
 
 services:
   mosquitto:
@@ -6,14 +6,14 @@ services:
       context: .
       dockerfile: infra/mosquitto/Dockerfile
       args:
-        MOSQUITTO_IMAGE: ${MOSQUITTO_IMAGE:-eclipse-mosquitto:2.0.22}
+        MOSQUITTO_IMAGE: ${MOSQUITTO_IMAGE}
     restart: unless-stopped
     environment:
-      MQTT_WEARABLE_USERNAME: ${MQTT_WEARABLE_USERNAME:-esp32-001}
-      MQTT_NODERED_USERNAME: ${MQTT_NODERED_USERNAME:-node-red}
-      MQTT_PARENT_USERNAME: ${MQTT_PARENT_USERNAME:-parent-poc}
+      MQTT_WEARABLE_USERNAME: ${MQTT_WEARABLE_USERNAME}
+      MQTT_NODERED_USERNAME: ${MQTT_NODERED_USERNAME}
+      MQTT_PARENT_USERNAME: ${MQTT_PARENT_USERNAME}
     ports:
-      - "${POC_BIND_ADDRESS:-127.0.0.1}:${MQTT_PORT:-1883}:1883"
+      - "${POC_BIND_ADDRESS}:${MQTT_PORT}:1883"
     volumes:
       - ./infra/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - mosquitto-data:/mosquitto/data
@@ -36,20 +36,21 @@ services:
       context: .
       dockerfile: nodered/Dockerfile
       args:
-        NODE_RED_IMAGE: ${NODE_RED_IMAGE:-nodered/node-red:4.0.9-22}
+        NODE_RED_IMAGE: ${NODE_RED_IMAGE}
     restart: unless-stopped
     depends_on:
       mosquitto:
         condition: service_healthy
     environment:
-      TZ: ${TZ:-Europe/Rome}
+      TZ: ${TZ}
       MQTT_HOST: mosquitto
       MQTT_PORT: "1883"
-      MQTT_USERNAME: ${MQTT_NODERED_USERNAME:-node-red}
+      MQTT_USERNAME: ${MQTT_NODERED_USERNAME}
       MQTT_PASSWORD_FILE: /run/secrets/mqtt_nodered_password
       SQLITE_PATH: /data/sqlite/classmate.db
+      CLASSMATE_DATABASE_MODULE: /opt/classmate/database/lib/classmate-db.cjs
     ports:
-      - "127.0.0.1:${NODE_RED_PORT:-1880}:1880"
+      - "127.0.0.1:${NODE_RED_PORT}:1880"
     volumes:
       - ./nodered/flows.json:/data/flows.json:ro
       - ./nodered/settings.js:/data/settings.js:ro
@@ -71,21 +72,34 @@ services:
     networks:
       - backend
 
+  database-tools:
+    profiles: ["tools"]
+    build:
+      context: .
+      dockerfile: nodered/Dockerfile
+      args:
+        NODE_RED_IMAGE: ${NODE_RED_IMAGE}
+    entrypoint: ["node"]
+    command: ["--version"]
+    volumes:
+      - ./:/workspace
+      - sqlite-data:/data/sqlite
+
 networks:
   backend:
 
 secrets:
   mqtt_wearable_password:
-    file: ${MQTT_WEARABLE_PASSWORD_FILE:-./infra/secrets/mqtt_wearable_password}
+    file: ${MQTT_WEARABLE_PASSWORD_FILE}
   mqtt_nodered_password:
-    file: ${MQTT_NODERED_PASSWORD_FILE:-./infra/secrets/mqtt_nodered_password}
+    file: ${MQTT_NODERED_PASSWORD_FILE}
   mqtt_parent_password:
-    file: ${MQTT_PARENT_PASSWORD_FILE:-./infra/secrets/mqtt_parent_password}
+    file: ${MQTT_PARENT_PASSWORD_FILE}
 
 volumes:
   mosquitto-data:
-    name: ${MOSQUITTO_DATA_VOLUME:-classmate-mosquitto-data}
+    name: ${MOSQUITTO_DATA_VOLUME}
   mosquitto-logs:
-    name: ${MOSQUITTO_LOGS_VOLUME:-classmate-mosquitto-logs}
+    name: ${MOSQUITTO_LOGS_VOLUME}
   sqlite-data:
-    name: ${SQLITE_DATA_VOLUME:-classmate-sqlite}
+    name: ${SQLITE_DATA_VOLUME}
