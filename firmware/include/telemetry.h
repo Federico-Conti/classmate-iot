@@ -8,7 +8,7 @@
 class Telemetry {
  public:
   explicit Telemetry(RssiSource &source);
-  bool sample(uint32_t nowMs);
+  bool sample(uint32_t nowMs, RssiObservation &observation);
 
  private:
   RssiSource &source_;

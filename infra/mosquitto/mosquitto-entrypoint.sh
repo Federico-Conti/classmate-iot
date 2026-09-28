@@ -22,6 +22,7 @@ case "$MQTT_WEARABLE_USERNAME" in
         ;;
 esac
 
+rm -f "$password_file" "$acl_file"
 {
     printf '%s:%s\n' "$MQTT_WEARABLE_USERNAME" "$(read_secret /run/secrets/mqtt_wearable_password)"
     printf '%s:%s\n' "$MQTT_NODERED_USERNAME" "$(read_secret /run/secrets/mqtt_nodered_password)"

@@ -6,10 +6,6 @@ tests
 
 /README.md
 
-# Local contract verification assets
-contracts/mqtt/fixtures/
-contracts/mqtt/validate-fixtures.mjs
-
 # Local runtime configuration and credentials
 infra/secrets/*
 !infra/secrets/README.md
@@ -18,6 +14,10 @@ firmware/include/secrets.h
 firmware/wokwi-secrets.toml
 firmware/.pio/
 firmware/.vscode/
+
+# Local contract verification assets
+contracts/mqtt/fixtures/
+contracts/mqtt/validate-fixtures.mjs
 
 # Local service state and exports
 infra/data/
