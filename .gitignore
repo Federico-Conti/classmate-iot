@@ -1,13 +1,14 @@
 /openspec
 .agents
 tests
+!/tests/firmware/
 /docs
+
+/README.md
 
 # Local contract verification assets
 contracts/mqtt/fixtures/
 contracts/mqtt/validate-fixtures.mjs
-
-*.md
 
 # Local runtime configuration and credentials
 infra/secrets/*
@@ -15,6 +16,8 @@ infra/secrets/*
 !infra/secrets/*.example
 firmware/include/secrets.h
 firmware/wokwi-secrets.toml
+firmware/.pio/
+firmware/.vscode/
 
 # Local service state and exports
 infra/data/
