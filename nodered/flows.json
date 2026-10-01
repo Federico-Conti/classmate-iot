@@ -184,10 +184,30 @@
     "y": 100,
     "wires": [
       [
-        "telemetry-debug"
+        "telemetry-device-context"
       ],
       [
         "telemetry-rejected-debug"
+      ]
+    ]
+  },
+  {
+    "id": "telemetry-device-context",
+    "type": "function",
+    "z": "telemetry-ingestion-tab",
+    "name": "Maintain per-device context",
+    "func": "const deviceId = msg.payload.deviceId;\nconst contexts = flow.get('processingByDevice') || {};\nconst previous = contexts[deviceId];\nconst sameSession = previous && previous.childId === msg.childId && previous.bootId === msg.payload.bootId;\ncontexts[deviceId] = {\n    childId: msg.childId,\n    bootId: msg.payload.bootId,\n    lastSequence: msg.payload.sequence,\n    lastReceivedAt: msg.receivedAt,\n    rssiWindow: sameSession ? previous.rssiWindow : [],\n};\nflow.set('processingByDevice', contexts);\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 2100,
+    "y": 100,
+    "wires": [
+      [
+        "telemetry-debug"
       ]
     ]
   },
@@ -259,7 +279,7 @@
     "targetType": "full",
     "statusVal": "",
     "statusType": "auto",
-    "x": 2100,
+    "x": 2330,
     "y": 100,
     "wires": []
   },
