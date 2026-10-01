@@ -50,8 +50,102 @@
     "y": 100,
     "wires": [
       [
+        "telemetry-assignment-prepare"
+      ],
+      [
+        "telemetry-rejected-debug"
+      ]
+    ]
+  },
+  {
+    "id": "telemetry-assignment-prepare",
+    "type": "function",
+    "z": "telemetry-ingestion-tab",
+    "name": "Prepare device lookup",
+    "func": "msg.telemetry = msg.payload;\nmsg.dbOperation = 'getActiveAssignmentByDevice';\nmsg.params = { deviceId: msg.telemetry.deviceId };\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 695,
+    "y": 100,
+    "wires": [
+      [
+        "telemetry-assignment-db"
+      ]
+    ]
+  },
+  {
+    "id": "telemetry-assignment-db",
+    "type": "classmate-db",
+    "z": "telemetry-ingestion-tab",
+    "name": "Find active assignment",
+    "database": "/data/sqlite/classmate.db",
+    "x": 940,
+    "y": 100,
+    "wires": [
+      [
+        "telemetry-assignment-gate"
+      ]
+    ]
+  },
+  {
+    "id": "telemetry-assignment-gate",
+    "type": "function",
+    "z": "telemetry-ingestion-tab",
+    "name": "Allow assigned device",
+    "func": "const assignment = msg.payload;\nif (!assignment || assignment.deviceId !== msg.telemetry.deviceId || !assignment.childId) {\n    return [null, { topic: msg.topic, payload: { reason: 'unassigned-device' } }];\n}\nmsg.childId = assignment.childId;\nmsg.payload = msg.telemetry;\ndelete msg.telemetry;\ndelete msg.params;\ndelete msg.dbOperation;\nreturn [msg, null];",
+    "outputs": 2,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1180,
+    "y": 100,
+    "wires": [
+      [
         "telemetry-debug"
       ],
+      [
+        "telemetry-rejected-debug"
+      ]
+    ]
+  },
+  {
+    "id": "telemetry-assignment-catch",
+    "type": "catch",
+    "z": "telemetry-ingestion-tab",
+    "name": "Device lookup errors",
+    "scope": [
+      "telemetry-assignment-db"
+    ],
+    "uncaught": false,
+    "x": 940,
+    "y": 210,
+    "wires": [
+      [
+        "telemetry-assignment-error"
+      ]
+    ]
+  },
+  {
+    "id": "telemetry-assignment-error",
+    "type": "function",
+    "z": "telemetry-ingestion-tab",
+    "name": "Report lookup failure",
+    "func": "return { topic: msg.topic, payload: { reason: 'assignment-lookup-error' } };",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1180,
+    "y": 210,
+    "wires": [
       [
         "telemetry-rejected-debug"
       ]
@@ -78,7 +172,7 @@
     "id": "telemetry-debug",
     "type": "debug",
     "z": "telemetry-ingestion-tab",
-    "name": "Validated telemetry (enable manually)",
+    "name": "Assigned telemetry (enable manually)",
     "active": false,
     "tosidebar": true,
     "console": false,
@@ -87,7 +181,7 @@
     "targetType": "full",
     "statusVal": "",
     "statusType": "auto",
-    "x": 755,
+    "x": 1435,
     "y": 100,
     "wires": []
   },
