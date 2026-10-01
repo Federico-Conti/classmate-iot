@@ -1,0 +1,27 @@
+<script type="text/javascript">
+    RED.nodes.registerType('classmate-telemetry-validator', {
+        category: 'function',
+        color: '#dedede',
+        defaults: {
+            name: { value: '' },
+        },
+        inputs: 1,
+        outputs: 2,
+        outputLabels: ['valid', 'rejected'],
+        icon: 'function.svg',
+        label: function () {
+            return this.name || 'Validate telemetry';
+        },
+    });
+</script>
+
+<script type="text/html" data-template-name="classmate-telemetry-validator">
+    <div class="form-row">
+        <label for="node-input-name">Name</label>
+        <input type="text" id="node-input-name">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="classmate-telemetry-validator">
+    <p>Checks UTF-8 JSON against the MQTT telemetry schema and matches the device ID to the topic. The first output receives parsed valid telemetry; the second receives only a rejection reason.</p>
+</script>

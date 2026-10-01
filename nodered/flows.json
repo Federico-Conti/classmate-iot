@@ -1,5 +1,97 @@
 [
   {
+    "id": "telemetry-ingestion-tab",
+    "type": "tab",
+    "label": "Telemetry Ingestion",
+    "disabled": false,
+    "info": "MQTT telemetry input; validation and processing are pending."
+  },
+  {
+    "id": "telemetry-broker",
+    "type": "mqtt-broker",
+    "name": "Local Mosquitto",
+    "broker": "mosquitto",
+    "port": "1883",
+    "clientid": "classmate-node-red",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": true,
+    "autoUnsubscribe": true
+  },
+  {
+    "id": "telemetry-mqtt-in",
+    "type": "mqtt in",
+    "z": "telemetry-ingestion-tab",
+    "name": "Wearable telemetry",
+    "topic": "classmate/v1/devices/+/telemetry",
+    "qos": "1",
+    "datatype": "buffer",
+    "broker": "telemetry-broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 180,
+    "y": 100,
+    "wires": [
+      [
+        "telemetry-validator"
+      ]
+    ]
+  },
+  {
+    "id": "telemetry-validator",
+    "type": "classmate-telemetry-validator",
+    "z": "telemetry-ingestion-tab",
+    "name": "Validate topic and payload",
+    "x": 460,
+    "y": 100,
+    "wires": [
+      [
+        "telemetry-debug"
+      ],
+      [
+        "telemetry-rejected-debug"
+      ]
+    ]
+  },
+  {
+    "id": "telemetry-rejected-debug",
+    "type": "debug",
+    "z": "telemetry-ingestion-tab",
+    "name": "Rejected telemetry (enable manually)",
+    "active": false,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 755,
+    "y": 150,
+    "wires": []
+  },
+  {
+    "id": "telemetry-debug",
+    "type": "debug",
+    "z": "telemetry-ingestion-tab",
+    "name": "Validated telemetry (enable manually)",
+    "active": false,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 755,
+    "y": 100,
+    "wires": []
+  },
+  {
     "id": "system-health-tab",
     "type": "tab",
     "label": "System Health",

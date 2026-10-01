@@ -1,0 +1,10 @@
+{
+  "name": "classmate-telemetry-validator",
+  "version": "1.0.0",
+  "private": true,
+  "node-red": {
+    "nodes": {
+      "classmate-telemetry-validator": "classmate-telemetry-validator.js"
+    }
+  }
+}
