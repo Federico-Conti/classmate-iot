@@ -50,10 +50,30 @@
     "y": 100,
     "wires": [
       [
-        "telemetry-assignment-prepare"
+        "telemetry-received-at"
       ],
       [
         "telemetry-rejected-debug"
+      ]
+    ]
+  },
+  {
+    "id": "telemetry-received-at",
+    "type": "function",
+    "z": "telemetry-ingestion-tab",
+    "name": "Assign server receivedAt",
+    "func": "msg.receivedAt = new Date().toISOString();\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 615,
+    "y": 40,
+    "wires": [
+      [
+        "telemetry-assignment-prepare"
       ]
     ]
   },
@@ -107,6 +127,63 @@
     "y": 100,
     "wires": [
       [
+        "telemetry-sequence-prepare"
+      ],
+      [
+        "telemetry-rejected-debug"
+      ]
+    ]
+  },
+  {
+    "id": "telemetry-sequence-prepare",
+    "type": "function",
+    "z": "telemetry-ingestion-tab",
+    "name": "Prepare sequence check",
+    "func": "msg.telemetry = msg.payload;\nmsg.dbOperation = 'updateDeviceState';\nmsg.params = { deviceId: msg.telemetry.deviceId, lastReceivedAt: msg.receivedAt, lastBootId: msg.telemetry.bootId, lastSequence: msg.telemetry.sequence };\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1435,
+    "y": 100,
+    "wires": [
+      [
+        "telemetry-sequence-db"
+      ]
+    ]
+  },
+  {
+    "id": "telemetry-sequence-db",
+    "type": "classmate-db",
+    "z": "telemetry-ingestion-tab",
+    "name": "Accept new sequence",
+    "database": "/data/sqlite/classmate.db",
+    "x": 1650,
+    "y": 100,
+    "wires": [
+      [
+        "telemetry-sequence-gate"
+      ]
+    ]
+  },
+  {
+    "id": "telemetry-sequence-gate",
+    "type": "function",
+    "z": "telemetry-ingestion-tab",
+    "name": "Forward new sample",
+    "func": "if (!msg.payload.accepted) {\n    return [null, { topic: msg.topic, payload: { reason: msg.payload.reason } }];\n}\nmsg.payload = msg.telemetry;\ndelete msg.telemetry;\ndelete msg.params;\ndelete msg.dbOperation;\nreturn [msg, null];",
+    "outputs": 2,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1865,
+    "y": 100,
+    "wires": [
+      [
         "telemetry-debug"
       ],
       [
@@ -120,7 +197,8 @@
     "z": "telemetry-ingestion-tab",
     "name": "Device lookup errors",
     "scope": [
-      "telemetry-assignment-db"
+      "telemetry-assignment-db",
+      "telemetry-sequence-db"
     ],
     "uncaught": false,
     "x": 940,
@@ -181,7 +259,7 @@
     "targetType": "full",
     "statusVal": "",
     "statusType": "auto",
-    "x": 1435,
+    "x": 2100,
     "y": 100,
     "wires": []
   },

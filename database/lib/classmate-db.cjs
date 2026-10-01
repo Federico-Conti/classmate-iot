@@ -283,19 +283,31 @@ class ClassMateDatabase {
     }
 
     updateDeviceState(state) {
-        this.database.prepare(`
-            INSERT INTO device_state(device_id, last_received_at, last_boot_id, last_sequence)
-            VALUES (?, ?, ?, ?)
-            ON CONFLICT(device_id) DO UPDATE SET
-                last_received_at = excluded.last_received_at,
-                last_boot_id = excluded.last_boot_id,
-                last_sequence = excluded.last_sequence
-        `).run(
-            requireText(state.deviceId, "deviceId"),
-            requireText(state.lastReceivedAt, "lastReceivedAt"),
-            requireText(state.lastBootId, "lastBootId"),
-            requireInteger(state.lastSequence, "lastSequence"),
-        );
+        const deviceId = requireText(state.deviceId, "deviceId");
+        const lastReceivedAt = requireText(state.lastReceivedAt, "lastReceivedAt");
+        const lastBootId = requireText(state.lastBootId, "lastBootId");
+        const lastSequence = requireInteger(state.lastSequence, "lastSequence");
+
+        return this.transaction(() => {
+            if (!this.getActiveAssignmentByDevice(deviceId)) {
+                return { accepted: false, reason: "unassigned-device" };
+            }
+            const previous = this.database.prepare(
+                "SELECT last_boot_id, last_sequence FROM device_state WHERE device_id = ?",
+            ).get(deviceId);
+            if (previous && previous.last_boot_id === lastBootId && lastSequence <= previous.last_sequence) {
+                return { accepted: false, reason: lastSequence === previous.last_sequence ? "duplicate-sequence" : "old-sequence" };
+            }
+            this.database.prepare(`
+                INSERT INTO device_state(device_id, last_received_at, last_boot_id, last_sequence)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(device_id) DO UPDATE SET
+                    last_received_at = excluded.last_received_at,
+                    last_boot_id = excluded.last_boot_id,
+                    last_sequence = excluded.last_sequence
+            `).run(deviceId, lastReceivedAt, lastBootId, lastSequence);
+            return { accepted: true };
+        });
     }
 
     commitAttendanceEvent(event) {
