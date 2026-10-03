@@ -207,9 +207,52 @@
     "y": 100,
     "wires": [
       [
-        "telemetry-debug"
+        "telemetry-weighted-rssi"
       ]
     ]
+  },
+  {
+    "id": "telemetry-weighted-rssi",
+    "type": "function",
+    "z": "telemetry-ingestion-tab",
+    "name": "Weighted RSSI window",
+    "func": "const rawSize = env.get('RSSI_WINDOW_SIZE');\nconst configuredSize = rawSize === undefined || rawSize === null ? '4' : String(rawSize);\nif (!/^[0-9]+$/.test(configuredSize) || Number(configuredSize) < 2 || Number(configuredSize) > 64) {\n    return [null, null, { topic: msg.topic, payload: { reason: 'invalid-rssi-window-size' } }];\n}\nconst windowSize = Number(configuredSize);\nconst contexts = flow.get('processingByDevice') || {};\nconst deviceContext = contexts[msg.payload.deviceId];\nif (!deviceContext) {\n    return [null, null, { topic: msg.topic, payload: { reason: 'processing-context-missing' } }];\n}\nif (!msg.payload.wifi.targetObserved) {\n    msg.windowComplete = false;\n    msg.weightedRssi = null;\n    return [null, msg, null];\n}\nconst rssiWindow = deviceContext.rssiWindow.slice(-(windowSize - 1));\nrssiWindow.push(msg.payload.wifi.rssiDbm);\ndeviceContext.rssiWindow = rssiWindow;\nflow.set('processingByDevice', contexts);\nmsg.rssiWindow = rssiWindow.slice();\nmsg.windowComplete = rssiWindow.length === windowSize;\nif (!msg.windowComplete) {\n    msg.weightedRssi = null;\n    return [null, msg, null];\n}\nconst weightedSum = rssiWindow.reduce((sum, value, index) => sum + value * (index + 1), 0);\nmsg.weightedRssi = weightedSum / (windowSize * (windowSize + 1) / 2);\nreturn [msg, null, null];",
+    "outputs": 3,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 2345,
+    "y": 100,
+    "wires": [
+      [
+        "telemetry-debug"
+      ],
+      [
+        "telemetry-incomplete-debug"
+      ],
+      [
+        "telemetry-rejected-debug"
+      ]
+    ]
+  },
+  {
+    "id": "telemetry-incomplete-debug",
+    "type": "debug",
+    "z": "telemetry-ingestion-tab",
+    "name": "Incomplete RSSI window (enable manually)",
+    "active": false,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 2610,
+    "y": 150,
+    "wires": []
   },
   {
     "id": "telemetry-assignment-catch",
@@ -279,7 +322,7 @@
     "targetType": "full",
     "statusVal": "",
     "statusType": "auto",
-    "x": 2330,
+    "x": 2610,
     "y": 100,
     "wires": []
   },

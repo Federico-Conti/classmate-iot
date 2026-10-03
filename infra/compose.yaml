@@ -49,6 +49,7 @@ services:
       MQTT_PASSWORD_FILE: /run/secrets/mqtt_nodered_password
       SQLITE_PATH: /data/sqlite/classmate.db
       CLASSMATE_DATABASE_MODULE: /opt/classmate/database/lib/classmate-db.cjs
+      RSSI_WINDOW_SIZE: ${RSSI_WINDOW_SIZE}
     ports:
       - "127.0.0.1:${NODE_RED_PORT}:1880"
     volumes:
