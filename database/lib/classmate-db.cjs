@@ -20,7 +20,7 @@ function requireInteger(value, fieldName, minimum = 0) {
 }
 
 function encodeCursor(event) {
-    return Buffer.from(JSON.stringify({ occurredAt: event.occurredAt, eventId: event.eventId }))
+    return Buffer.from(JSON.stringify({ receivedAt: event.receivedAt, eventRowid: event.eventRowid }))
         .toString("base64url");
 }
 
@@ -32,8 +32,8 @@ function decodeCursor(cursor) {
     try {
         const decoded = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8"));
         return {
-            occurredAt: requireText(decoded.occurredAt, "cursor.occurredAt"),
-            eventId: requireText(decoded.eventId, "cursor.eventId"),
+            receivedAt: requireText(decoded.receivedAt, "cursor.receivedAt"),
+            eventRowid: requireInteger(decoded.eventRowid, "cursor.eventRowid", 1),
         };
     } catch (error) {
         throw new TypeError(`cursor is invalid: ${error.message}`);
@@ -117,10 +117,8 @@ function mapEvent(row) {
         childId: row.child_id,
         deviceId: row.device_id,
         type: row.type,
-        occurredAt: row.occurred_at,
         receivedAt: row.received_at,
         weightedRssi: row.weighted_rssi,
-        evidence: JSON.parse(row.evidence_json),
     };
 }
 
@@ -193,19 +191,23 @@ class ClassMateDatabase {
 
         const row = this.database.prepare(`
             SELECT c.id, c.name, c.surname,
-                   ps.confirmed_state, ps.confirmed_at,
-                   ps.source_device_id, ps.last_event_id
+                   e.type, e.received_at, e.device_id, e.event_id
             FROM children c
-            LEFT JOIN presence_state ps ON ps.child_id = c.id
+            LEFT JOIN attendance_events e ON e.rowid = (
+                SELECT rowid FROM attendance_events
+                WHERE child_id = c.id
+                ORDER BY received_at DESC, rowid DESC
+                LIMIT 1
+            )
             WHERE c.id = ? AND c.active = 1
         `).get(childId);
 
         return {
             child: mapChild(row),
-            confirmedState: row.confirmed_state,
-            confirmedAt: row.confirmed_at,
-            sourceDeviceId: row.source_device_id,
-            lastEventId: row.last_event_id,
+            confirmedState: row.type === null ? null : row.type === "entry" ? "inside" : "outside",
+            confirmedAt: row.received_at,
+            sourceDeviceId: row.device_id,
+            lastEventId: row.event_id,
         };
     }
 
@@ -218,20 +220,20 @@ class ClassMateDatabase {
         const cursor = decodeCursor(options.cursor);
         const rows = cursor
             ? this.database.prepare(`
-                SELECT event_id, child_id, device_id, type, occurred_at,
-                       received_at, weighted_rssi, evidence_json
+                SELECT rowid AS event_rowid, event_id, child_id, device_id, type,
+                       received_at, weighted_rssi
                 FROM attendance_events
                 WHERE child_id = ?
-                  AND (occurred_at < ? OR (occurred_at = ? AND event_id < ?))
-                ORDER BY occurred_at DESC, event_id DESC
+                  AND (received_at < ? OR (received_at = ? AND rowid < ?))
+                ORDER BY received_at DESC, rowid DESC
                 LIMIT ?
-            `).all(childId, cursor.occurredAt, cursor.occurredAt, cursor.eventId, limit + 1)
+            `).all(childId, cursor.receivedAt, cursor.receivedAt, cursor.eventRowid, limit + 1)
             : this.database.prepare(`
-                SELECT event_id, child_id, device_id, type, occurred_at,
-                       received_at, weighted_rssi, evidence_json
+                SELECT rowid AS event_rowid, event_id, child_id, device_id, type,
+                       received_at, weighted_rssi
                 FROM attendance_events
                 WHERE child_id = ?
-                ORDER BY occurred_at DESC, event_id DESC
+                ORDER BY received_at DESC, rowid DESC
                 LIMIT ?
             `).all(childId, limit + 1);
 
@@ -239,7 +241,7 @@ class ClassMateDatabase {
         const events = rows.slice(0, limit).map(mapEvent);
         return {
             events,
-            nextCursor: hasMore ? encodeCursor(events.at(-1)) : null,
+            nextCursor: hasMore ? encodeCursor({ receivedAt: rows[limit - 1].received_at, eventRowid: rows[limit - 1].event_rowid }) : null,
         };
     }
 
@@ -328,36 +330,33 @@ class ClassMateDatabase {
             }
 
             const type = requireText(event.type, "type");
-            const confirmedState = type === "entry" ? "inside" : type === "exit" ? "outside" : type;
-            const evidenceJson = JSON.stringify(event.evidence || {});
+            const receivedAt = requireText(event.receivedAt, "receivedAt");
+            const lastEvent = this.database.prepare(`
+                SELECT type, received_at FROM attendance_events
+                WHERE child_id = ?
+                ORDER BY received_at DESC, rowid DESC
+                LIMIT 1
+            `).get(childId);
+            if (lastEvent && receivedAt < lastEvent.received_at) {
+                return { inserted: false, eventId, reason: "stale-event" };
+            }
+            if (lastEvent && lastEvent.type === type) {
+                return { inserted: false, eventId, reason: "unchanged-state" };
+            }
             const payload = JSON.stringify(event.payload || event);
 
             this.database.prepare(`
                 INSERT INTO attendance_events(
-                    event_id, child_id, device_id, type, occurred_at,
-                    received_at, weighted_rssi, evidence_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    event_id, child_id, device_id, type, received_at, weighted_rssi
+                ) VALUES (?, ?, ?, ?, ?, ?)
             `).run(
                 eventId,
                 childId,
                 deviceId,
                 type,
-                requireText(event.occurredAt, "occurredAt"),
-                requireText(event.receivedAt, "receivedAt"),
-                event.weightedRssi ?? null,
-                evidenceJson,
+                receivedAt,
+                event.weightedRssi,
             );
-
-            this.database.prepare(`
-                INSERT INTO presence_state(
-                    child_id, confirmed_state, confirmed_at, source_device_id, last_event_id
-                ) VALUES (?, ?, ?, ?, ?)
-                ON CONFLICT(child_id) DO UPDATE SET
-                    confirmed_state = excluded.confirmed_state,
-                    confirmed_at = excluded.confirmed_at,
-                    source_device_id = excluded.source_device_id,
-                    last_event_id = excluded.last_event_id
-            `).run(childId, confirmedState, event.occurredAt, deviceId, eventId);
 
             this.database.prepare(`
                 INSERT INTO event_outbox(event_id, topic, payload)

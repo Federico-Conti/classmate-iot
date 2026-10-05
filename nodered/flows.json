@@ -729,7 +729,7 @@
     "id": "event-db",
     "type": "classmate-db",
     "z": "api-data-tab",
-    "name": "Event + presence + outbox",
+    "name": "Event + outbox",
     "database": "/data/sqlite/classmate.db",
     "x": 680,
     "y": 510,

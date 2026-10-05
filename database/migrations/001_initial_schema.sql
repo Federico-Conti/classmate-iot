@@ -38,23 +38,13 @@ CREATE TABLE device_state (
     UNIQUE (device_id, last_boot_id, last_sequence)
 ) STRICT;
 
-CREATE TABLE presence_state (
-    child_id TEXT PRIMARY KEY REFERENCES children(id) ON DELETE CASCADE,
-    confirmed_state TEXT NOT NULL CHECK (confirmed_state IN ('inside', 'outside')),
-    confirmed_at TEXT NOT NULL,
-    source_device_id TEXT NOT NULL REFERENCES devices(id) ON DELETE RESTRICT,
-    last_event_id TEXT NOT NULL UNIQUE
-) STRICT;
-
 CREATE TABLE attendance_events (
     event_id TEXT PRIMARY KEY,
     child_id TEXT NOT NULL REFERENCES children(id) ON DELETE RESTRICT,
     device_id TEXT NOT NULL REFERENCES devices(id) ON DELETE RESTRICT,
     type TEXT NOT NULL CHECK (type IN ('entry', 'exit')),
-    occurred_at TEXT NOT NULL,
     received_at TEXT NOT NULL,
-    weighted_rssi REAL CHECK (weighted_rssi IS NULL OR weighted_rssi BETWEEN -127 AND 0),
-    evidence_json TEXT NOT NULL DEFAULT '{}' CHECK (json_valid(evidence_json))
+    weighted_rssi REAL NOT NULL CHECK (weighted_rssi BETWEEN -127 AND 0)
 ) STRICT;
 
 CREATE TABLE event_outbox (
