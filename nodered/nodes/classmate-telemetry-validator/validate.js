@@ -28,6 +28,7 @@ function validateTelemetry(topic, payload) {
     if (!validatePayload(data)) return { valid: false, reason: 'invalid-payload' };
     // The deviceId in the JSON must match the one in the topic.
     if (data.deviceId !== topicMatch[1]) return { valid: false, reason: 'device-id-mismatch' };
+    if (!data.wifi.targetObserved) return { valid: false, reason: 'target-not-observed' };
     return { valid: true, data };
 }
 

@@ -38,7 +38,7 @@ Choose `syntheticProfile` in `include/wokwi_config.h`, rebuild the `wokwi` envir
 | Profile | Expected telemetry and LED |
 | --- | --- |
 | `outside` | Repeats `-90, -88, -91, -89` dBm with `targetObserved: true`; LED green. Represents a consistently weak signal. |
-| `inside` | Repeats `-57, -55, -58, -54` dBm; LED green. Represents a consistently strong signal. |
+| `inside` | Repeats `-42, -40, -43, -41` dBm; LED green. All values exceed the POC's `-45` dBm presence threshold. |
 | `target-not-observed` | Continues publishing `targetObserved: false` and `rssiDbm: null` every interval; LED green because MQTT monitoring still works. This observation alone must not confirm an exit. |
 | `interruption` | Publishes three `-55` dBm samples, then stops publishing; LED turns red at the next sample interval. Missing telemetry alone must not confirm an exit. |
 

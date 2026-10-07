@@ -263,6 +263,21 @@ class ClassMateDatabase {
         } : null;
     }
 
+    getLatestConfirmedEvent(childId) {
+        const row = this.database.prepare(`
+            SELECT event_id, type, received_at
+            FROM attendance_events
+            WHERE child_id = ?
+            ORDER BY received_at DESC, rowid DESC
+            LIMIT 1
+        `).get(requireText(childId, "childId"));
+        return row ? {
+            eventId: row.event_id,
+            type: row.type,
+            receivedAt: row.received_at,
+        } : null;
+    }
+
     assignDevice(deviceId, childId) {
         return this.transaction(() => {
             const child = this.database.prepare(
@@ -314,7 +329,7 @@ class ClassMateDatabase {
 
     commitAttendanceEvent(event) {
         return this.transaction(() => {
-            const eventId = requireText(event.eventId, "eventId");
+            const eventId = event.eventId === undefined ? crypto.randomUUID() : requireText(event.eventId, "eventId");
             const childId = requireText(event.childId, "childId");
             const deviceId = requireText(event.deviceId, "deviceId");
             const existing = this.database.prepare(
@@ -330,20 +345,26 @@ class ClassMateDatabase {
             }
 
             const type = requireText(event.type, "type");
+            if (type !== "entry" && type !== "exit") {
+                throw new TypeError("type must be entry or exit");
+            }
             const receivedAt = requireText(event.receivedAt, "receivedAt");
-            const lastEvent = this.database.prepare(`
-                SELECT type, received_at FROM attendance_events
-                WHERE child_id = ?
-                ORDER BY received_at DESC, rowid DESC
-                LIMIT 1
-            `).get(childId);
-            if (lastEvent && receivedAt < lastEvent.received_at) {
+            if (!Number.isFinite(Date.parse(receivedAt)) || new Date(receivedAt).toISOString() !== receivedAt) {
+                throw new TypeError("receivedAt must be a server ISO timestamp");
+            }
+            const weightedRssi = event.weightedRssi;
+            if (typeof weightedRssi !== "number" || !Number.isFinite(weightedRssi)
+                || weightedRssi < -127 || weightedRssi > 0) {
+                throw new TypeError("weightedRssi must be a finite RSSI value");
+            }
+            const lastEvent = this.getLatestConfirmedEvent(childId);
+            if (lastEvent && receivedAt < lastEvent.receivedAt) {
                 return { inserted: false, eventId, reason: "stale-event" };
             }
             if (lastEvent && lastEvent.type === type) {
                 return { inserted: false, eventId, reason: "unchanged-state" };
             }
-            const payload = JSON.stringify(event.payload || event);
+            const payload = JSON.stringify({ schemaVersion: 1, eventId, childId, type, occurredAt: receivedAt });
 
             this.database.prepare(`
                 INSERT INTO attendance_events(
@@ -355,7 +376,7 @@ class ClassMateDatabase {
                 deviceId,
                 type,
                 receivedAt,
-                event.weightedRssi,
+                weightedRssi,
             );
 
             this.database.prepare(`
@@ -363,7 +384,7 @@ class ClassMateDatabase {
                 VALUES (?, ?, ?)
             `).run(
                 eventId,
-                requireText(event.topic, "topic"),
+                `classmate/v1/children/${childId}/events`,
                 payload,
             );
 

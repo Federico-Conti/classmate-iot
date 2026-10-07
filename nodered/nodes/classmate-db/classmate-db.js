@@ -15,6 +15,7 @@ module.exports = function registerClassMateDatabaseNode(RED) {
             { limit: parameters.limit, cursor: parameters.cursor },
         ),
         getActiveAssignmentByDevice: (database, parameters) => database.getActiveAssignmentByDevice(parameters.deviceId),
+        getLatestConfirmedEvent: (database, parameters) => database.getLatestConfirmedEvent(parameters.childId),
         assignDevice: (database, parameters) => database.assignDevice(parameters.deviceId, parameters.childId),
         updateDeviceState: (database, parameters) => database.updateDeviceState(parameters),
         commitAttendanceEvent: (database, parameters) => database.commitAttendanceEvent(parameters),

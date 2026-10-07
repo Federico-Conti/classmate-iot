@@ -3,4 +3,4 @@
 set -eu
 
 script_directory=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-exec "$script_directory/compose.sh" down
+exec "$script_directory/compose.sh" down #--volumes

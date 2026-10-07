@@ -4,7 +4,7 @@
     "type": "tab",
     "label": "Telemetry Ingestion",
     "disabled": false,
-    "info": "MQTT telemetry input; validation and processing are pending."
+    "info": "MQTT telemetry, weighted RSSI, stable presence classification, and atomic event/outbox persistence."
   },
   {
     "id": "telemetry-broker",
@@ -196,7 +196,7 @@
     "type": "function",
     "z": "telemetry-ingestion-tab",
     "name": "Maintain per-device context",
-    "func": "const deviceId = msg.payload.deviceId;\nconst contexts = flow.get('processingByDevice') || {};\nconst previous = contexts[deviceId];\nconst sameSession = previous && previous.childId === msg.childId && previous.bootId === msg.payload.bootId;\ncontexts[deviceId] = {\n    childId: msg.childId,\n    bootId: msg.payload.bootId,\n    lastSequence: msg.payload.sequence,\n    lastReceivedAt: msg.receivedAt,\n    rssiWindow: sameSession ? previous.rssiWindow : [],\n};\nflow.set('processingByDevice', contexts);\nreturn msg;",
+    "func": "const deviceId = msg.payload.deviceId;\nconst contexts = flow.get('processingByDevice') || {};\nconst previous = contexts[deviceId];\nconst sameSession = previous && previous.childId === msg.childId && previous.bootId === msg.payload.bootId;\ncontexts[deviceId] = {\n    childId: msg.childId,\n    bootId: msg.payload.bootId,\n    lastReceivedAt: msg.receivedAt,\n    rssiWindow: sameSession ? previous.rssiWindow : [],\n    previusCandidate: sameSession ? previous.previusCandidate : null,\n    stableCount: sameSession ? previous.stableCount : 0,\n};\nflow.set('processingByDevice', contexts);\nreturn msg;",
     "outputs": 1,
     "timeout": 0,
     "noerr": 0,
@@ -216,7 +216,7 @@
     "type": "function",
     "z": "telemetry-ingestion-tab",
     "name": "Weighted RSSI window",
-    "func": "const rawSize = env.get('RSSI_WINDOW_SIZE');\nconst configuredSize = rawSize === undefined || rawSize === null ? '4' : String(rawSize);\nif (!/^[0-9]+$/.test(configuredSize) || Number(configuredSize) < 2 || Number(configuredSize) > 64) {\n    return [null, null, { topic: msg.topic, payload: { reason: 'invalid-rssi-window-size' } }];\n}\nconst windowSize = Number(configuredSize);\nconst contexts = flow.get('processingByDevice') || {};\nconst deviceContext = contexts[msg.payload.deviceId];\nif (!deviceContext) {\n    return [null, null, { topic: msg.topic, payload: { reason: 'processing-context-missing' } }];\n}\nif (!msg.payload.wifi.targetObserved) {\n    msg.windowComplete = false;\n    msg.weightedRssi = null;\n    return [null, msg, null];\n}\nconst rssiWindow = deviceContext.rssiWindow.slice(-(windowSize - 1));\nrssiWindow.push(msg.payload.wifi.rssiDbm);\ndeviceContext.rssiWindow = rssiWindow;\nflow.set('processingByDevice', contexts);\nmsg.rssiWindow = rssiWindow.slice();\nmsg.windowComplete = rssiWindow.length === windowSize;\nif (!msg.windowComplete) {\n    msg.weightedRssi = null;\n    return [null, msg, null];\n}\nconst weightedSum = rssiWindow.reduce((sum, value, index) => sum + value * (index + 1), 0);\nmsg.weightedRssi = weightedSum / (windowSize * (windowSize + 1) / 2);\nreturn [msg, null, null];",
+    "func": "const rawSize = env.get('RSSI_WINDOW_SIZE');\nconst configuredSize = rawSize === undefined || rawSize === null ? '4' : String(rawSize);\nif (!/^[0-9]+$/.test(configuredSize) || Number(configuredSize) < 2 || Number(configuredSize) > 64) {\n    return [null, null, { topic: msg.topic, payload: { reason: 'invalid-rssi-window-size' } }];\n}\nconst windowSize = Number(configuredSize);\nconst contexts = flow.get('processingByDevice') || {};\nconst deviceContext = contexts[msg.payload.deviceId];\nif (!deviceContext) {\n    return [null, null, { topic: msg.topic, payload: { reason: 'processing-context-missing' } }];\n}\nconst rssiWindow = deviceContext.rssiWindow.slice(-(windowSize - 1));\nrssiWindow.push(msg.payload.wifi.rssiDbm);\nmsg.rssiWindow = rssiWindow.slice();\nmsg.windowComplete = rssiWindow.length === windowSize;\nif (!msg.windowComplete) {\n    deviceContext.rssiWindow = rssiWindow;\n    flow.set('processingByDevice', contexts);\n    msg.weightedRssi = null;\n    return [null, msg, null];\n}\nconst weightedSum = rssiWindow.reduce((sum, value, index) => sum + value * (index + 1), 0);\nmsg.weightedRssi = weightedSum / (windowSize * (windowSize + 1) / 2);\nrssiWindow.splice(0, Math.max(1, Math.floor(windowSize / 3)));\ndeviceContext.rssiWindow = rssiWindow;\nflow.set('processingByDevice', contexts);\nreturn [msg, null, null];",
     "outputs": 3,
     "timeout": 0,
     "noerr": 0,
@@ -227,6 +227,7 @@
     "y": 100,
     "wires": [
       [
+        "telemetry-classify-stability",
         "telemetry-debug"
       ],
       [
@@ -236,6 +237,87 @@
         "telemetry-rejected-debug"
       ]
     ]
+  },
+  {
+    "id": "telemetry-classify-stability",
+    "type": "function",
+    "z": "telemetry-ingestion-tab",
+    "name": "Classify RSSI and count stability",
+    "func": "const rawThreshold = env.get('RSSI_THRESHOLD');\nconst threshold = rawThreshold === undefined || rawThreshold === null ? -45 : Number(rawThreshold);\nconst rawStability = env.get('RSSI_STABILITY_COUNT');\nconst stabilityCount = rawStability === undefined || rawStability === null ? 3 : Number(rawStability);\nif ((rawThreshold !== undefined && rawThreshold !== null && String(rawThreshold).trim() === '') || !Number.isFinite(threshold) || threshold < -127 || threshold > 0 || !Number.isSafeInteger(stabilityCount) || stabilityCount < 1) {\n    return [null, null, { topic: msg.topic, payload: { reason: 'invalid-presence-configuration' } }];\n}\nconst contexts = flow.get('processingByDevice') || {};\nconst deviceContext = contexts[msg.payload.deviceId];\nif (!deviceContext || deviceContext.childId !== msg.childId || deviceContext.bootId !== msg.payload.bootId) {\n    return [null, null, { topic: msg.topic, payload: { reason: 'processing-context-missing' } }];\n}\nconst classification = msg.weightedRssi > threshold ? 'IN' : 'OUT';\nif (deviceContext.previusCandidate === classification) {\n    deviceContext.stableCount += 1;\n} else {\n    deviceContext.stableCount = 0;\n}\ndeviceContext.previusCandidate = classification;\nmsg.classification = classification;\nmsg.stableCount = deviceContext.stableCount;\nconst stable = deviceContext.stableCount >= stabilityCount;\nif (stable) deviceContext.stableCount = 0;\nflow.set('processingByDevice', contexts);\nreturn stable ? [msg, null, null] : [null, msg, null];",
+    "outputs": 3,
+    "x": 2570,
+    "y": 100,
+    "wires": [["telemetry-latest-prepare"], ["telemetry-incomplete-stability"], ["telemetry-rejected-debug"]]
+  },
+  {
+    "id": "telemetry-incomplete-stability",
+    "type": "debug",
+    "z": "telemetry-ingestion-tab",
+    "name": "Incomplete stability count",
+    "active": false,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 2800,
+    "y": 150,
+    "wires": []
+  },
+  {
+    "id": "telemetry-latest-prepare",
+    "type": "function",
+    "z": "telemetry-ingestion-tab",
+    "name": "Read confirmed child state",
+    "func": "msg.telemetry = msg.payload;\nmsg.dbOperation = 'getLatestConfirmedEvent';\nmsg.params = { childId: msg.childId };\nreturn msg;",
+    "outputs": 1,
+    "x": 2580,
+    "y": 60,
+    "wires": [["telemetry-latest-db"]]
+  },
+  {
+    "id": "telemetry-latest-db",
+    "type": "classmate-db",
+    "z": "telemetry-ingestion-tab",
+    "name": "Latest confirmed event",
+    "database": "/data/sqlite/classmate.db",
+    "x": 2790,
+    "y": 60,
+    "wires": [["telemetry-confirmed-gate"]]
+  },
+  {
+    "id": "telemetry-confirmed-gate",
+    "type": "function",
+    "z": "telemetry-ingestion-tab",
+    "name": "Commit only changed confirmed state",
+    "func": "const type = msg.classification === 'IN' ? 'entry' : 'exit';\nif (msg.payload && msg.payload.type === type) { return null; }\nmsg.dbOperation = 'commitAttendanceEvent';\nmsg.params = { childId: msg.childId, deviceId: msg.telemetry.deviceId, type, receivedAt: msg.receivedAt, weightedRssi: msg.weightedRssi };\nreturn msg;",
+    "outputs": 1,
+    "x": 3000,
+    "y": 60,
+    "wires": [["telemetry-event-db"]]
+  },
+  {
+    "id": "telemetry-event-db",
+    "type": "classmate-db",
+    "z": "telemetry-ingestion-tab",
+    "name": "Commit event and outbox",
+    "database": "/data/sqlite/classmate.db",
+    "x": 3240,
+    "y": 60,
+    "wires": [["telemetry-event-result"]]
+  },
+  {
+    "id": "telemetry-event-result",
+    "type": "function",
+    "z": "telemetry-ingestion-tab",
+    "name": "Report committed transition",
+    "func": "if (!msg.payload.inserted) { return null; }\nreturn { topic: msg.topic, payload: { eventId: msg.payload.eventId, type: msg.params.type, childId: msg.childId } };",
+    "outputs": 1,
+    "x": 3480,
+    "y": 60,
+    "wires": [["telemetry-debug"]]
   },
   {
     "id": "telemetry-incomplete-debug",
@@ -261,7 +343,11 @@
     "name": "Device lookup errors",
     "scope": [
       "telemetry-assignment-db",
-      "telemetry-sequence-db"
+      "telemetry-sequence-db",
+      "telemetry-latest-db",
+      "telemetry-classify-stability",
+      "telemetry-confirmed-gate",
+      "telemetry-event-db"
     ],
     "uncaught": false,
     "x": 940,

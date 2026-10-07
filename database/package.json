@@ -7,6 +7,6 @@
   "scripts": {
     "migrate": "node scripts/migrate.mjs --database ../infra/data/classmate.db",
     "provision": "node scripts/provision.mjs --database ../infra/data/classmate.db --seed seeds/poc.example.json",
-    "test": "node --test attendance.test.cjs"
+    "test": "node --test event-transaction.test.mjs"
   }
 }

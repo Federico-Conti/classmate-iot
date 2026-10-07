@@ -7,7 +7,7 @@
         },
         inputs: 1,
         outputs: 2,
-        outputLabels: ['valid', 'rejected'],
+        outputLabels: ['observed', 'rejected or not observed'],
         icon: 'function.svg',
         label: function () {
             return this.name || 'Validate telemetry';
@@ -23,5 +23,5 @@
 </script>
 
 <script type="text/html" data-help-name="classmate-telemetry-validator">
-    <p>Checks UTF-8 JSON against the MQTT telemetry schema and matches the device ID to the topic. The first output receives parsed valid telemetry; the second receives only a rejection reason.</p>
+    <p>Checks UTF-8 JSON against the MQTT telemetry schema and matches the device ID to the topic. The first output receives observed RSSI telemetry; the second receives a diagnostic reason for invalid or target-not-observed messages.</p>
 </script>

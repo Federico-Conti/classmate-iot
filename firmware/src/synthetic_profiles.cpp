@@ -23,7 +23,7 @@ RssiObservation syntheticObservation(SyntheticProfile profile, uint32_t sampleIn
       return repeating(values, sampleIndex);
     }
     case SyntheticProfile::inside: {
-      constexpr int16_t values[] = {-57, -55, -58, -54};
+      constexpr int16_t values[] = {-42, -40, -43, -41};
       return repeating(values, sampleIndex);
     }
     case SyntheticProfile::targetNotObserved:
