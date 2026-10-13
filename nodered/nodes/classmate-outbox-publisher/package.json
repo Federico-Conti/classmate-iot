@@ -1,0 +1,10 @@
+{
+  "name": "classmate-outbox-publisher",
+  "version": "1.0.0",
+  "private": true,
+  "node-red": {
+    "nodes": {
+      "classmate-outbox-publisher": "classmate-outbox-publisher.js"
+    }
+  }
+}

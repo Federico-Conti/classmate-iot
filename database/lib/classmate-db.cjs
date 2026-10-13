@@ -394,10 +394,11 @@ class ClassMateDatabase {
 
     listPendingOutbox(limit = 100) {
         return this.database.prepare(`
-            SELECT event_id, topic, payload, attempts
-            FROM event_outbox
-            WHERE published_at IS NULL
-            ORDER BY event_id
+            SELECT outbox.event_id, outbox.topic, outbox.payload, outbox.attempts
+            FROM event_outbox AS outbox
+            JOIN attendance_events AS event ON event.event_id = outbox.event_id
+            WHERE outbox.published_at IS NULL
+            ORDER BY event.received_at ASC, event.rowid ASC
             LIMIT ?
         `).all(Math.min(requireInteger(limit, "limit", 1), 500)).map((row) => ({
             eventId: row.event_id,
@@ -411,7 +412,7 @@ class ClassMateDatabase {
         const result = this.database.prepare(`
             UPDATE event_outbox
             SET published_at = ?, attempts = attempts + 1
-            WHERE event_id = ?
+            WHERE event_id = ? AND published_at IS NULL
         `).run(requireText(publishedAt, "publishedAt"), requireText(eventId, "eventId"));
         return result.changes === 1;
     }

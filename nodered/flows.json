@@ -37,6 +37,21 @@
     "y": 100,
     "wires": [
       [
+        "telemetry-context-log"
+      ]
+    ]
+  },
+  {
+    "id": "telemetry-context-log",
+    "type": "function",
+    "z": "telemetry-ingestion-tab",
+    "name": "Log processingByDevice on arrival",
+    "func": "node.log('processingByDevice: ' + JSON.stringify(flow.get('processingByDevice') || {}));\nreturn msg;",
+    "outputs": 1,
+    "x": 355,
+    "y": 100,
+    "wires": [
+      [
         "telemetry-validator"
       ]
     ]
@@ -317,7 +332,61 @@
     "outputs": 1,
     "x": 3480,
     "y": 60,
-    "wires": [["telemetry-debug"]]
+    "wires": [["telemetry-debug", "outbox-publisher"]]
+  },
+  {
+    "id": "outbox-poll",
+    "type": "inject",
+    "z": "telemetry-ingestion-tab",
+    "name": "Drain outbox on startup and retry",
+    "props": [{ "p": "payload" }],
+    "repeat": "5",
+    "crontab": "",
+    "once": true,
+    "onceDelay": 1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 3300,
+    "y": 280,
+    "wires": [["outbox-publisher"]]
+  },
+  {
+    "id": "outbox-publisher",
+    "type": "classmate-outbox-publisher",
+    "z": "telemetry-ingestion-tab",
+    "name": "Publish confirmed events",
+    "database": "/data/sqlite/classmate.db",
+    "broker": "telemetry-broker",
+    "x": 3560,
+    "y": 280,
+    "wires": []
+  },
+  {
+    "id": "outbox-catch",
+    "type": "catch",
+    "z": "telemetry-ingestion-tab",
+    "name": "Outbox publication failures",
+    "scope": ["outbox-publisher"],
+    "uncaught": false,
+    "x": 3310,
+    "y": 340,
+    "wires": [["outbox-errors"]]
+  },
+  {
+    "id": "outbox-errors",
+    "type": "debug",
+    "z": "telemetry-ingestion-tab",
+    "name": "Outbox errors",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "x": 3550,
+    "y": 340,
+    "wires": []
   },
   {
     "id": "telemetry-incomplete-debug",
