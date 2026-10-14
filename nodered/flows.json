@@ -58,9 +58,16 @@
   },
   {
     "id": "telemetry-validator",
-    "type": "classmate-telemetry-validator",
+    "type": "function",
     "z": "telemetry-ingestion-tab",
-    "name": "Validate topic and payload",
+    "name": "Validate telemetry payload",
+    "func": "function reject(reason) {\n    return [null, { topic: msg.topic, payload: { reason } }];\n}\n\nlet data;\ntry {\n    let text = msg.payload;\n    if (Buffer.isBuffer(text)) {\n        text = text.toString('utf8');\n        if (!Buffer.from(text, 'utf8').equals(msg.payload)) return reject('invalid-json');\n    }\n    if (typeof text !== 'string') return reject('invalid-json');\n    data = JSON.parse(text);\n} catch {\n    return reject('invalid-json');\n}\n\nif (!data || typeof data !== 'object' || Array.isArray(data) ||\n    Object.keys(data).length !== 6 ||\n    data.schemaVersion !== 1 ||\n    typeof data.deviceId !== 'string' || !/^[a-z0-9][a-z0-9-]{2,63}$/.test(data.deviceId) ||\n    typeof data.bootId !== 'string' || !/^[A-Za-z0-9_-]{8,64}$/.test(data.bootId) ||\n    !Number.isInteger(data.sequence) || data.sequence < 0 || data.sequence > 4294967295 ||\n    !Number.isInteger(data.deviceUptimeMs) || data.deviceUptimeMs < 0 ||\n    !data.wifi || typeof data.wifi !== 'object' || Array.isArray(data.wifi) ||\n    Object.keys(data.wifi).length !== 2 ||\n    typeof data.wifi.targetObserved !== 'boolean' ||\n    (data.wifi.targetObserved\n        ? !Number.isInteger(data.wifi.rssiDbm) || data.wifi.rssiDbm < -127 || data.wifi.rssiDbm > 0\n        : data.wifi.rssiDbm !== null)) {\n    return reject('invalid-payload');\n}\n\nif (data.deviceId !== (typeof msg.topic === 'string' ? msg.topic.split('/')[3] : undefined)) {\n    return reject('device-id-mismatch');\n}\nif (!data.wifi.targetObserved) return reject('target-not-observed');\nmsg.payload = data;\nreturn [msg, null];",
+    "outputs": 2,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
     "x": 912,
     "y": 200,
     "wires": [
