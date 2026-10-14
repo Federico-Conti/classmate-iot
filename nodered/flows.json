@@ -33,8 +33,8 @@
     "rap": true,
     "rh": 0,
     "inputs": 0,
-    "x": 180,
-    "y": 100,
+    "x": 292,
+    "y": 200,
     "wires": [
       [
         "telemetry-context-log"
@@ -48,8 +48,8 @@
     "name": "Log processingByDevice on arrival",
     "func": "node.log('processingByDevice: ' + JSON.stringify(flow.get('processingByDevice') || {}));\nreturn msg;",
     "outputs": 1,
-    "x": 355,
-    "y": 100,
+    "x": 590,
+    "y": 200,
     "wires": [
       [
         "telemetry-validator"
@@ -61,8 +61,8 @@
     "type": "classmate-telemetry-validator",
     "z": "telemetry-ingestion-tab",
     "name": "Validate topic and payload",
-    "x": 460,
-    "y": 100,
+    "x": 912,
+    "y": 200,
     "wires": [
       [
         "telemetry-received-at"
@@ -84,8 +84,8 @@
     "initialize": "",
     "finalize": "",
     "libs": [],
-    "x": 615,
-    "y": 40,
+    "x": 1200,
+    "y": 200,
     "wires": [
       [
         "telemetry-assignment-prepare"
@@ -104,8 +104,8 @@
     "initialize": "",
     "finalize": "",
     "libs": [],
-    "x": 695,
-    "y": 100,
+    "x": 1472,
+    "y": 200,
     "wires": [
       [
         "telemetry-assignment-db"
@@ -118,8 +118,8 @@
     "z": "telemetry-ingestion-tab",
     "name": "Find active assignment",
     "database": "/data/sqlite/classmate.db",
-    "x": 940,
-    "y": 100,
+    "x": 1738,
+    "y": 200,
     "wires": [
       [
         "telemetry-assignment-gate"
@@ -138,8 +138,8 @@
     "initialize": "",
     "finalize": "",
     "libs": [],
-    "x": 1180,
-    "y": 100,
+    "x": 2004,
+    "y": 200,
     "wires": [
       [
         "telemetry-sequence-prepare"
@@ -161,8 +161,8 @@
     "initialize": "",
     "finalize": "",
     "libs": [],
-    "x": 1435,
-    "y": 100,
+    "x": 2274,
+    "y": 200,
     "wires": [
       [
         "telemetry-sequence-db"
@@ -175,8 +175,8 @@
     "z": "telemetry-ingestion-tab",
     "name": "Accept new sequence",
     "database": "/data/sqlite/classmate.db",
-    "x": 1650,
-    "y": 100,
+    "x": 2544,
+    "y": 200,
     "wires": [
       [
         "telemetry-sequence-gate"
@@ -195,8 +195,8 @@
     "initialize": "",
     "finalize": "",
     "libs": [],
-    "x": 1865,
-    "y": 100,
+    "x": 2801,
+    "y": 200,
     "wires": [
       [
         "telemetry-device-context"
@@ -218,8 +218,8 @@
     "initialize": "",
     "finalize": "",
     "libs": [],
-    "x": 2100,
-    "y": 100,
+    "x": 3079,
+    "y": 200,
     "wires": [
       [
         "telemetry-weighted-rssi"
@@ -238,8 +238,8 @@
     "initialize": "",
     "finalize": "",
     "libs": [],
-    "x": 2345,
-    "y": 100,
+    "x": 3364,
+    "y": 200,
     "wires": [
       [
         "telemetry-classify-stability",
@@ -260,9 +260,19 @@
     "name": "Classify RSSI and count stability",
     "func": "const rawThreshold = env.get('RSSI_THRESHOLD');\nconst threshold = rawThreshold === undefined || rawThreshold === null ? -45 : Number(rawThreshold);\nconst rawStability = env.get('RSSI_STABILITY_COUNT');\nconst stabilityCount = rawStability === undefined || rawStability === null ? 3 : Number(rawStability);\nif ((rawThreshold !== undefined && rawThreshold !== null && String(rawThreshold).trim() === '') || !Number.isFinite(threshold) || threshold < -127 || threshold > 0 || !Number.isSafeInteger(stabilityCount) || stabilityCount < 1) {\n    return [null, null, { topic: msg.topic, payload: { reason: 'invalid-presence-configuration' } }];\n}\nconst contexts = flow.get('processingByDevice') || {};\nconst deviceContext = contexts[msg.payload.deviceId];\nif (!deviceContext || deviceContext.childId !== msg.childId || deviceContext.bootId !== msg.payload.bootId) {\n    return [null, null, { topic: msg.topic, payload: { reason: 'processing-context-missing' } }];\n}\nconst classification = msg.weightedRssi > threshold ? 'IN' : 'OUT';\nif (deviceContext.previusCandidate === classification) {\n    deviceContext.stableCount += 1;\n} else {\n    deviceContext.stableCount = 0;\n}\ndeviceContext.previusCandidate = classification;\nmsg.classification = classification;\nmsg.stableCount = deviceContext.stableCount;\nconst stable = deviceContext.stableCount >= stabilityCount;\nif (stable) deviceContext.stableCount = 0;\nflow.set('processingByDevice', contexts);\nreturn stable ? [msg, null, null] : [null, msg, null];",
     "outputs": 3,
-    "x": 2570,
-    "y": 100,
-    "wires": [["telemetry-latest-prepare"], ["telemetry-incomplete-stability"], ["telemetry-rejected-debug"]]
+    "x": 3664,
+    "y": 200,
+    "wires": [
+      [
+        "telemetry-latest-prepare"
+      ],
+      [
+        "telemetry-incomplete-stability"
+      ],
+      [
+        "telemetry-rejected-debug"
+      ]
+    ]
   },
   {
     "id": "telemetry-incomplete-stability",
@@ -277,8 +287,8 @@
     "targetType": "full",
     "statusVal": "",
     "statusType": "auto",
-    "x": 2800,
-    "y": 150,
+    "x": 3740,
+    "y": 450,
     "wires": []
   },
   {
@@ -288,9 +298,13 @@
     "name": "Read confirmed child state",
     "func": "msg.telemetry = msg.payload;\nmsg.dbOperation = 'getLatestConfirmedEvent';\nmsg.params = { childId: msg.childId };\nreturn msg;",
     "outputs": 1,
-    "x": 2580,
-    "y": 60,
-    "wires": [["telemetry-latest-db"]]
+    "x": 3978,
+    "y": 200,
+    "wires": [
+      [
+        "telemetry-latest-db"
+      ]
+    ]
   },
   {
     "id": "telemetry-latest-db",
@@ -298,9 +312,13 @@
     "z": "telemetry-ingestion-tab",
     "name": "Latest confirmed event",
     "database": "/data/sqlite/classmate.db",
-    "x": 2790,
-    "y": 60,
-    "wires": [["telemetry-confirmed-gate"]]
+    "x": 4260,
+    "y": 200,
+    "wires": [
+      [
+        "telemetry-confirmed-gate"
+      ]
+    ]
   },
   {
     "id": "telemetry-confirmed-gate",
@@ -309,9 +327,13 @@
     "name": "Commit only changed confirmed state",
     "func": "const type = msg.classification === 'IN' ? 'entry' : 'exit';\nif (msg.payload && msg.payload.type === type) { return null; }\nmsg.dbOperation = 'commitAttendanceEvent';\nmsg.params = { childId: msg.childId, deviceId: msg.telemetry.deviceId, type, receivedAt: msg.receivedAt, weightedRssi: msg.weightedRssi };\nreturn msg;",
     "outputs": 1,
-    "x": 3000,
-    "y": 60,
-    "wires": [["telemetry-event-db"]]
+    "x": 4583,
+    "y": 200,
+    "wires": [
+      [
+        "telemetry-event-db"
+      ]
+    ]
   },
   {
     "id": "telemetry-event-db",
@@ -319,9 +341,13 @@
     "z": "telemetry-ingestion-tab",
     "name": "Commit event and outbox",
     "database": "/data/sqlite/classmate.db",
-    "x": 3240,
-    "y": 60,
-    "wires": [["telemetry-event-result"]]
+    "x": 4916,
+    "y": 200,
+    "wires": [
+      [
+        "telemetry-event-result"
+      ]
+    ]
   },
   {
     "id": "telemetry-event-result",
@@ -330,16 +356,25 @@
     "name": "Report committed transition",
     "func": "if (!msg.payload.inserted) { return null; }\nreturn { topic: msg.topic, payload: { eventId: msg.payload.eventId, type: msg.params.type, childId: msg.childId } };",
     "outputs": 1,
-    "x": 3480,
-    "y": 60,
-    "wires": [["telemetry-debug", "outbox-publisher"]]
+    "x": 5214,
+    "y": 200,
+    "wires": [
+      [
+        "telemetry-debug",
+        "outbox-publisher"
+      ]
+    ]
   },
   {
     "id": "outbox-poll",
     "type": "inject",
     "z": "telemetry-ingestion-tab",
     "name": "Drain outbox on startup and retry",
-    "props": [{ "p": "payload" }],
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
     "repeat": "5",
     "crontab": "",
     "once": true,
@@ -347,9 +382,13 @@
     "topic": "",
     "payload": "",
     "payloadType": "date",
-    "x": 3300,
-    "y": 280,
-    "wires": [["outbox-publisher"]]
+    "x": 4920,
+    "y": 865,
+    "wires": [
+      [
+        "outbox-publisher"
+      ]
+    ]
   },
   {
     "id": "outbox-publisher",
@@ -358,8 +397,8 @@
     "name": "Publish confirmed events",
     "database": "/data/sqlite/classmate.db",
     "broker": "telemetry-broker",
-    "x": 3560,
-    "y": 280,
+    "x": 5540,
+    "y": 865,
     "wires": []
   },
   {
@@ -367,11 +406,17 @@
     "type": "catch",
     "z": "telemetry-ingestion-tab",
     "name": "Outbox publication failures",
-    "scope": ["outbox-publisher"],
+    "scope": [
+      "outbox-publisher"
+    ],
     "uncaught": false,
-    "x": 3310,
-    "y": 340,
-    "wires": [["outbox-errors"]]
+    "x": 4920,
+    "y": 1070,
+    "wires": [
+      [
+        "outbox-errors"
+      ]
+    ]
   },
   {
     "id": "outbox-errors",
@@ -384,8 +429,8 @@
     "tostatus": false,
     "complete": "true",
     "targetType": "full",
-    "x": 3550,
-    "y": 340,
+    "x": 5540,
+    "y": 1070,
     "wires": []
   },
   {
@@ -401,8 +446,8 @@
     "targetType": "full",
     "statusVal": "",
     "statusType": "auto",
-    "x": 2610,
-    "y": 150,
+    "x": 3330,
+    "y": 450,
     "wires": []
   },
   {
@@ -419,8 +464,8 @@
       "telemetry-event-db"
     ],
     "uncaught": false,
-    "x": 940,
-    "y": 210,
+    "x": 1630,
+    "y": 755,
     "wires": [
       [
         "telemetry-assignment-error"
@@ -439,8 +484,8 @@
     "initialize": "",
     "finalize": "",
     "libs": [],
-    "x": 1180,
-    "y": 210,
+    "x": 1980,
+    "y": 755,
     "wires": [
       [
         "telemetry-rejected-debug"
@@ -460,8 +505,8 @@
     "targetType": "full",
     "statusVal": "",
     "statusType": "auto",
-    "x": 755,
-    "y": 150,
+    "x": 4250,
+    "y": 755,
     "wires": []
   },
   {
@@ -477,8 +522,8 @@
     "targetType": "full",
     "statusVal": "",
     "statusType": "auto",
-    "x": 2610,
-    "y": 100,
+    "x": 4910,
+    "y": 450,
     "wires": []
   },
   {
@@ -497,9 +542,13 @@
     "method": "get",
     "upload": false,
     "swaggerDoc": "",
-    "x": 130,
-    "y": 100,
-    "wires": [["health-operation"]]
+    "x": 180,
+    "y": 220,
+    "wires": [
+      [
+        "health-operation"
+      ]
+    ]
   },
   {
     "id": "health-operation",
@@ -513,9 +562,13 @@
     "initialize": "",
     "finalize": "",
     "libs": [],
-    "x": 330,
-    "y": 100,
-    "wires": [["health-database"]]
+    "x": 455,
+    "y": 220,
+    "wires": [
+      [
+        "health-database"
+      ]
+    ]
   },
   {
     "id": "health-database",
@@ -523,9 +576,13 @@
     "z": "system-health-tab",
     "name": "SQLite health",
     "database": "/data/sqlite/classmate.db",
-    "x": 530,
-    "y": 100,
-    "wires": [["health-response-body"]]
+    "x": 725,
+    "y": 220,
+    "wires": [
+      [
+        "health-response-body"
+      ]
+    ]
   },
   {
     "id": "health-response-body",
@@ -539,9 +596,13 @@
     "initialize": "",
     "finalize": "",
     "libs": [],
-    "x": 740,
-    "y": 100,
-    "wires": [["health-response"]]
+    "x": 995,
+    "y": 220,
+    "wires": [
+      [
+        "health-response"
+      ]
+    ]
   },
   {
     "id": "health-response",
@@ -550,8 +611,8 @@
     "name": "Health JSON",
     "statusCode": "",
     "headers": {},
-    "x": 950,
-    "y": 100,
+    "x": 1265,
+    "y": 220,
     "wires": []
   },
   {
@@ -570,9 +631,13 @@
     "method": "post",
     "upload": false,
     "swaggerDoc": "",
-    "x": 170,
-    "y": 80,
-    "wires": [["resolve-parent-prepare"]]
+    "x": 190,
+    "y": 150,
+    "wires": [
+      [
+        "resolve-parent-prepare"
+      ]
+    ]
   },
   {
     "id": "resolve-parent-prepare",
@@ -586,9 +651,13 @@
     "initialize": "",
     "finalize": "",
     "libs": [],
-    "x": 440,
-    "y": 80,
-    "wires": [["resolve-parent-db"]]
+    "x": 545,
+    "y": 150,
+    "wires": [
+      [
+        "resolve-parent-db"
+      ]
+    ]
   },
   {
     "id": "resolve-parent-db",
@@ -596,9 +665,13 @@
     "z": "api-data-tab",
     "name": "Resolve parent",
     "database": "/data/sqlite/classmate.db",
-    "x": 680,
-    "y": 80,
-    "wires": [["single-result-response"]]
+    "x": 895,
+    "y": 150,
+    "wires": [
+      [
+        "single-result-response"
+      ]
+    ]
   },
   {
     "id": "children-request",
@@ -609,9 +682,13 @@
     "method": "get",
     "upload": false,
     "swaggerDoc": "",
-    "x": 150,
-    "y": 150,
-    "wires": [["children-prepare"]]
+    "x": 190,
+    "y": 300,
+    "wires": [
+      [
+        "children-prepare"
+      ]
+    ]
   },
   {
     "id": "children-prepare",
@@ -625,9 +702,13 @@
     "initialize": "",
     "finalize": "",
     "libs": [],
-    "x": 440,
-    "y": 150,
-    "wires": [["children-db"]]
+    "x": 545,
+    "y": 300,
+    "wires": [
+      [
+        "children-db"
+      ]
+    ]
   },
   {
     "id": "children-db",
@@ -635,9 +716,13 @@
     "z": "api-data-tab",
     "name": "List children",
     "database": "/data/sqlite/classmate.db",
-    "x": 680,
-    "y": 150,
-    "wires": [["list-response"]]
+    "x": 895,
+    "y": 300,
+    "wires": [
+      [
+        "list-response"
+      ]
+    ]
   },
   {
     "id": "status-request",
@@ -648,9 +733,13 @@
     "method": "get",
     "upload": false,
     "swaggerDoc": "",
-    "x": 140,
-    "y": 220,
-    "wires": [["status-prepare"]]
+    "x": 190,
+    "y": 450,
+    "wires": [
+      [
+        "status-prepare"
+      ]
+    ]
   },
   {
     "id": "status-prepare",
@@ -664,9 +753,13 @@
     "initialize": "",
     "finalize": "",
     "libs": [],
-    "x": 420,
-    "y": 220,
-    "wires": [["status-db"]]
+    "x": 545,
+    "y": 450,
+    "wires": [
+      [
+        "status-db"
+      ]
+    ]
   },
   {
     "id": "status-db",
@@ -674,9 +767,13 @@
     "z": "api-data-tab",
     "name": "Get child status",
     "database": "/data/sqlite/classmate.db",
-    "x": 670,
-    "y": 220,
-    "wires": [["single-result-response"]]
+    "x": 895,
+    "y": 450,
+    "wires": [
+      [
+        "single-result-response"
+      ]
+    ]
   },
   {
     "id": "history-request",
@@ -687,9 +784,13 @@
     "method": "get",
     "upload": false,
     "swaggerDoc": "",
-    "x": 140,
-    "y": 290,
-    "wires": [["history-prepare"]]
+    "x": 190,
+    "y": 600,
+    "wires": [
+      [
+        "history-prepare"
+      ]
+    ]
   },
   {
     "id": "history-prepare",
@@ -703,9 +804,13 @@
     "initialize": "",
     "finalize": "",
     "libs": [],
-    "x": 410,
-    "y": 290,
-    "wires": [["history-db"]]
+    "x": 545,
+    "y": 600,
+    "wires": [
+      [
+        "history-db"
+      ]
+    ]
   },
   {
     "id": "history-db",
@@ -713,9 +818,13 @@
     "z": "api-data-tab",
     "name": "Get child history",
     "database": "/data/sqlite/classmate.db",
-    "x": 670,
-    "y": 290,
-    "wires": [["single-result-response"]]
+    "x": 895,
+    "y": 600,
+    "wires": [
+      [
+        "single-result-response"
+      ]
+    ]
   },
   {
     "id": "single-result-response",
@@ -729,9 +838,13 @@
     "initialize": "",
     "finalize": "",
     "libs": [],
-    "x": 920,
-    "y": 180,
-    "wires": [["api-response"]]
+    "x": 1230,
+    "y": 450,
+    "wires": [
+      [
+        "api-response"
+      ]
+    ]
   },
   {
     "id": "list-response",
@@ -745,9 +858,13 @@
     "initialize": "",
     "finalize": "",
     "libs": [],
-    "x": 910,
-    "y": 150,
-    "wires": [["api-response"]]
+    "x": 1230,
+    "y": 300,
+    "wires": [
+      [
+        "api-response"
+      ]
+    ]
   },
   {
     "id": "api-response",
@@ -756,8 +873,8 @@
     "name": "API JSON",
     "statusCode": "",
     "headers": {},
-    "x": 1140,
-    "y": 180,
+    "x": 1605,
+    "y": 375,
     "wires": []
   },
   {
@@ -766,9 +883,13 @@
     "z": "api-data-tab",
     "name": "Resolve device assignment",
     "links": [],
-    "x": 175,
-    "y": 390,
-    "wires": [["assignment-operation"]]
+    "x": 190,
+    "y": 1030,
+    "wires": [
+      [
+        "assignment-operation"
+      ]
+    ]
   },
   {
     "id": "assignment-operation",
@@ -782,9 +903,13 @@
     "initialize": "",
     "finalize": "",
     "libs": [],
-    "x": 400,
-    "y": 390,
-    "wires": [["assignment-db"]]
+    "x": 545,
+    "y": 1030,
+    "wires": [
+      [
+        "assignment-db"
+      ]
+    ]
   },
   {
     "id": "assignment-db",
@@ -792,9 +917,13 @@
     "z": "api-data-tab",
     "name": "Resolve assignment",
     "database": "/data/sqlite/classmate.db",
-    "x": 640,
-    "y": 390,
-    "wires": [["assignment-link-out"]]
+    "x": 895,
+    "y": 1030,
+    "wires": [
+      [
+        "assignment-link-out"
+      ]
+    ]
   },
   {
     "id": "assignment-link-out",
@@ -803,8 +932,8 @@
     "name": "Assignment result",
     "mode": "return",
     "links": [],
-    "x": 845,
-    "y": 390,
+    "x": 1230,
+    "y": 1030,
     "wires": []
   },
   {
@@ -813,9 +942,13 @@
     "z": "api-data-tab",
     "name": "Update device projection",
     "links": [],
-    "x": 175,
-    "y": 450,
-    "wires": [["projection-operation"]]
+    "x": 190,
+    "y": 1200,
+    "wires": [
+      [
+        "projection-operation"
+      ]
+    ]
   },
   {
     "id": "projection-operation",
@@ -829,9 +962,13 @@
     "initialize": "",
     "finalize": "",
     "libs": [],
-    "x": 400,
-    "y": 450,
-    "wires": [["projection-db"]]
+    "x": 545,
+    "y": 1200,
+    "wires": [
+      [
+        "projection-db"
+      ]
+    ]
   },
   {
     "id": "projection-db",
@@ -839,9 +976,13 @@
     "z": "api-data-tab",
     "name": "Save projection",
     "database": "/data/sqlite/classmate.db",
-    "x": 640,
-    "y": 450,
-    "wires": [["projection-link-out"]]
+    "x": 895,
+    "y": 1200,
+    "wires": [
+      [
+        "projection-link-out"
+      ]
+    ]
   },
   {
     "id": "projection-link-out",
@@ -850,8 +991,8 @@
     "name": "Projection result",
     "mode": "return",
     "links": [],
-    "x": 845,
-    "y": 450,
+    "x": 1230,
+    "y": 1200,
     "wires": []
   },
   {
@@ -860,9 +1001,13 @@
     "z": "api-data-tab",
     "name": "Commit attendance event",
     "links": [],
-    "x": 175,
-    "y": 510,
-    "wires": [["event-operation"]]
+    "x": 190,
+    "y": 1370,
+    "wires": [
+      [
+        "event-operation"
+      ]
+    ]
   },
   {
     "id": "event-operation",
@@ -876,9 +1021,13 @@
     "initialize": "",
     "finalize": "",
     "libs": [],
-    "x": 420,
-    "y": 510,
-    "wires": [["event-db"]]
+    "x": 545,
+    "y": 1370,
+    "wires": [
+      [
+        "event-db"
+      ]
+    ]
   },
   {
     "id": "event-db",
@@ -886,9 +1035,13 @@
     "z": "api-data-tab",
     "name": "Event + outbox",
     "database": "/data/sqlite/classmate.db",
-    "x": 680,
-    "y": 510,
-    "wires": [["event-link-out"]]
+    "x": 895,
+    "y": 1370,
+    "wires": [
+      [
+        "event-link-out"
+      ]
+    ]
   },
   {
     "id": "event-link-out",
@@ -897,8 +1050,8 @@
     "name": "Committed event",
     "mode": "return",
     "links": [],
-    "x": 885,
-    "y": 510,
+    "x": 1230,
+    "y": 1370,
     "wires": []
   },
   {
@@ -908,9 +1061,13 @@
     "name": "Database/API errors",
     "scope": null,
     "uncaught": false,
-    "x": 180,
-    "y": 590,
-    "wires": [["api-error-response"]]
+    "x": 895,
+    "y": 780,
+    "wires": [
+      [
+        "api-error-response"
+      ]
+    ]
   },
   {
     "id": "api-error-response",
@@ -924,8 +1081,12 @@
     "initialize": "",
     "finalize": "",
     "libs": [],
-    "x": 420,
-    "y": 590,
-    "wires": [["api-response"]]
+    "x": 1230,
+    "y": 780,
+    "wires": [
+      [
+        "api-response"
+      ]
+    ]
   }
 ]
