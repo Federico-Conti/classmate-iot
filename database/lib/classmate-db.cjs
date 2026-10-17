@@ -156,11 +156,12 @@ class ClassMateDatabase {
     }
 
     resolveParent(code) {
-        return mapParent(this.database.prepare(`
+        const parent = mapParent(this.database.prepare(`
             SELECT id, code, name, surname
             FROM parents
             WHERE code = ? COLLATE NOCASE AND active = 1
         `).get(requireText(code, "code")));
+        return parent ? { ...parent, children: this.listAssociatedChildren(code) } : null;
     }
 
     listAssociatedChildren(code) {

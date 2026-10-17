@@ -53,7 +53,7 @@ services:
       RSSI_THRESHOLD: ${RSSI_THRESHOLD}
       RSSI_STABILITY_COUNT: ${RSSI_STABILITY_COUNT}
     ports:
-      - "127.0.0.1:${NODE_RED_PORT}:1880"
+      - "${POC_BIND_ADDRESS}:${NODE_RED_PORT}:1880"
     volumes:
       - ./nodered/flows.json:/data/flows.json:ro
       - ./nodered/settings.js:/data/settings.js:ro

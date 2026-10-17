@@ -732,57 +732,6 @@
     ]
   },
   {
-    "id": "status-request",
-    "type": "http in",
-    "z": "api-data-tab",
-    "name": "GET child status",
-    "url": "/api/v1/children/:childId/status",
-    "method": "get",
-    "upload": false,
-    "swaggerDoc": "",
-    "x": 190,
-    "y": 450,
-    "wires": [
-      [
-        "status-prepare"
-      ]
-    ]
-  },
-  {
-    "id": "status-prepare",
-    "type": "function",
-    "z": "api-data-tab",
-    "name": "Child status parameters",
-    "func": "msg.dbOperation = 'getChildStatus';\nmsg.params = { code: msg.req.headers['x-parent-code'], childId: msg.req.params.childId };\nreturn msg;",
-    "outputs": 1,
-    "timeout": 0,
-    "noerr": 0,
-    "initialize": "",
-    "finalize": "",
-    "libs": [],
-    "x": 545,
-    "y": 450,
-    "wires": [
-      [
-        "status-db"
-      ]
-    ]
-  },
-  {
-    "id": "status-db",
-    "type": "classmate-db",
-    "z": "api-data-tab",
-    "name": "Get child status",
-    "database": "/data/sqlite/classmate.db",
-    "x": 895,
-    "y": 450,
-    "wires": [
-      [
-        "single-result-response"
-      ]
-    ]
-  },
-  {
     "id": "history-request",
     "type": "http in",
     "z": "api-data-tab",
