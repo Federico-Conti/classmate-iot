@@ -54,8 +54,3 @@ CREATE TABLE event_outbox (
     published_at TEXT,
     attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0)
 ) STRICT;
-
-CREATE TABLE system_config (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-) STRICT;

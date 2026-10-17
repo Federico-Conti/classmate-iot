@@ -444,11 +444,6 @@ class ClassMateDatabase {
                 ON CONFLICT(id) DO UPDATE SET
                     active = excluded.active, firmware_version = excluded.firmware_version
             `);
-            const upsertConfiguration = this.database.prepare(`
-                INSERT INTO system_config(key, value) VALUES (?, ?)
-                ON CONFLICT(key) DO UPDATE SET value = excluded.value
-            `);
-
             for (const parent of seed.parents || []) {
                 upsertParent.run(parent.id, parent.code, parent.name, parent.surname, parent.active === false ? 0 : 1);
             }
@@ -474,16 +469,11 @@ class ClassMateDatabase {
                     this.assignDeviceWithoutTransaction(device.id, device.childId);
                 }
             }
-            for (const [key, value] of Object.entries(seed.broker || {})) {
-                upsertConfiguration.run(`mqtt.${key}`, String(value));
-            }
-
             return {
                 parents: (seed.parents || []).length,
                 children: (seed.children || []).length,
                 associations: (seed.associations || []).length,
                 devices: (seed.devices || []).length,
-                brokerSettings: Object.keys(seed.broker || {}).length,
             };
         });
     }

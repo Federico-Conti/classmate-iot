@@ -26,10 +26,5 @@
       "childId": "child-001",
       "firmwareVersion": "poc"
     }
-  ],
-  "broker": {
-    "host": "192.168.1.49",
-    "port": 1883,
-    "parentUsername": "parent-poc"
-  }
+  ]
 }
