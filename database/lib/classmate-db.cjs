@@ -185,33 +185,6 @@ class ClassMateDatabase {
         `).get(requireText(code, "code"), requireText(childId, "childId")));
     }
 
-    getChildStatus(code, childId) {
-        if (!this.isAssociated(code, childId)) {
-            return null;
-        }
-
-        const row = this.database.prepare(`
-            SELECT c.id, c.name, c.surname,
-                   e.type, e.received_at, e.device_id, e.event_id
-            FROM children c
-            LEFT JOIN attendance_events e ON e.rowid = (
-                SELECT rowid FROM attendance_events
-                WHERE child_id = c.id
-                ORDER BY received_at DESC, rowid DESC
-                LIMIT 1
-            )
-            WHERE c.id = ? AND c.active = 1
-        `).get(childId);
-
-        return {
-            child: mapChild(row),
-            confirmedState: row.type === null ? null : row.type === "entry" ? "inside" : "outside",
-            confirmedAt: row.received_at,
-            sourceDeviceId: row.device_id,
-            lastEventId: row.event_id,
-        };
-    }
-
     getChildHistory(code, childId, options = {}) {
         if (!this.isAssociated(code, childId)) {
             return null;
@@ -277,27 +250,6 @@ class ClassMateDatabase {
             type: row.type,
             receivedAt: row.received_at,
         } : null;
-    }
-
-    assignDevice(deviceId, childId) {
-        return this.transaction(() => {
-            const child = this.database.prepare(
-                "SELECT id FROM children WHERE id = ? AND active = 1",
-            ).get(requireText(childId, "childId"));
-            if (!child) {
-                throw new Error(`Active child not found: ${childId}`);
-            }
-
-            const result = this.database.prepare(`
-                UPDATE devices
-                SET child_id = ?, active = 1
-                WHERE id = ?
-            `).run(childId, requireText(deviceId, "deviceId"));
-            if (result.changes !== 1) {
-                throw new Error(`Device not found: ${deviceId}`);
-            }
-            return this.getActiveAssignmentByDevice(deviceId);
-        });
     }
 
     updateDeviceState(state) {

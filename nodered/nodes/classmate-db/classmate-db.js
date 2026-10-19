@@ -8,7 +8,6 @@ module.exports = function registerClassMateDatabaseNode(RED) {
         health: (database) => database.health(),
         resolveParent: (database, parameters) => database.resolveParent(parameters.code),
         listAssociatedChildren: (database, parameters) => database.listAssociatedChildren(parameters.code),
-        getChildStatus: (database, parameters) => database.getChildStatus(parameters.code, parameters.childId),
         getChildHistory: (database, parameters) => database.getChildHistory(
             parameters.code,
             parameters.childId,
@@ -16,7 +15,6 @@ module.exports = function registerClassMateDatabaseNode(RED) {
         ),
         getActiveAssignmentByDevice: (database, parameters) => database.getActiveAssignmentByDevice(parameters.deviceId),
         getLatestConfirmedEvent: (database, parameters) => database.getLatestConfirmedEvent(parameters.childId),
-        assignDevice: (database, parameters) => database.assignDevice(parameters.deviceId, parameters.childId),
         updateDeviceState: (database, parameters) => database.updateDeviceState(parameters),
         commitAttendanceEvent: (database, parameters) => database.commitAttendanceEvent(parameters),
         listPendingOutbox: (database, parameters) => database.listPendingOutbox(parameters.limit),
