@@ -4,7 +4,7 @@
 
 class SampleSchedule {
  public:
-  static constexpr uint32_t periodMs = 5000;
+  static constexpr uint32_t periodMs = 1000;
 
   bool due(uint32_t nowMs) {
     if (static_cast<int32_t>(nowMs - nextMs_) < 0) return false;

@@ -27,9 +27,6 @@ uint32_t sequence = 0;
 char bootId[17] = {};
 bool operational = false;
 bool wifiConnected = false;
-bool wifiOutageStarted = false;
-bool wifiOutageFinished = false;
-uint32_t wifiOutageStartedMs = 0;
 
 void setOperational(bool value) {
   if (operational == value) return;
@@ -47,28 +44,6 @@ void newBootId() {
   snprintf(bootId, sizeof(bootId), "%08lx%08lx",
            static_cast<unsigned long>(esp_random()), static_cast<unsigned long>(esp_random()));
   sequence = 0;
-}
-
-bool simulateWifiOutage(uint32_t nowMs) {
-  if (!device_config::simulateWifiOutage || wifiOutageFinished) return false;
-  if (!wifiOutageStarted && operational && sequence >= 3) {
-    wifiOutageStarted = true;
-    wifiOutageStartedMs = nowMs;
-    networkClient.stop();
-    WiFi.disconnect(true);
-    wifiConnected = false;
-    setOperational(false);
-    Serial.println("Simulated Wi-Fi outage started");
-  }
-  if (!wifiOutageStarted) return false;
-  if (static_cast<uint32_t>(nowMs - wifiOutageStartedMs) <
-      device_config::simulatedWifiOutageDurationMs) return true;
-  wifiOutageFinished = true;
-  WiFi.mode(WIFI_STA);
-  nextRetryMs = 0;
-  retryDelayMs = 1000;
-  Serial.println("Simulated Wi-Fi outage ended; reconnecting");
-  return false;
 }
 
 bool publishObservation(uint32_t nowMs, const RssiObservation &observation) {
@@ -121,10 +96,6 @@ void runApplication() {
     return;
   }
   const uint32_t nowMs = millis();
-  if (simulateWifiOutage(nowMs)) {
-    delay(100);
-    return;
-  }
   if (WiFi.status() != WL_CONNECTED) {
     if (wifiConnected) networkClient.stop();
     wifiConnected = false;

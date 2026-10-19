@@ -39,27 +39,16 @@ Choose `syntheticProfile` in `include/wokwi_config.h`, rebuild the `wokwi` envir
 | --- | --- |
 | `outside` | Repeats `-90, -88, -91, -89` dBm with `targetObserved: true`; LED green. Represents a consistently weak signal. |
 | `inside` | Repeats `-42, -40, -43, -41` dBm; LED green. All values exceed the POC's `-45` dBm presence threshold. |
+| `entry-exit` | Starts with 30 `inside` samples, then 30 `outside` samples, and repeats indefinitely (about 150 seconds per phase). Telemetry continues every five seconds; the confirmed entry/exit events follow after the RSSI window and stability checks. |
 | `target-not-observed` | Continues publishing `targetObserved: false` and `rssiDbm: null` every interval; LED green because MQTT monitoring still works. This observation alone must not confirm an exit. |
 | `interruption` | Publishes three `-55` dBm samples, then stops publishing; LED turns red at the next sample interval. Missing telemetry alone must not confirm an exit. |
-
-## Simulated transport Wi-Fi outage
-
-This test disables the simulated ESP32's transport Wi-Fi, not the synthetic school-network observation. Leave Mosquitto running throughout:
-
-1. Stop Wokwi. In `include/wokwi_config.h`, set `syntheticProfile = "outside"` and `simulateWifiOutage = true`; leave `simulatedWifiOutageDurationMs = 20000`.
-2. Build the `wokwi` PlatformIO environment and start Wokwi again. Keep its terminal visible; do not restart the simulator or Mosquitto during the test.
-3. Expect three normal `Published` messages (`-90`, `-88`, `-91` dBm) and a green LED. The firmware then prints `Simulated Wi-Fi outage started`, turns the LED red, and publishes nothing for 20 seconds.
-4. Expect `Simulated Wi-Fi outage ended; reconnecting`. After automatic Wi-Fi and MQTT recovery, the next `Published` message uses a different boot ID and `sequence 0`; `deviceUptimeMs` continues increasing and the LED turns green. Allow additional time beyond the 20-second outage for reconnection.
-5. Compare the last message before the outage with the first after it. No telemetry should appear between the two simulator messages announcing outage start and end. When finished, set `simulateWifiOutage = false`, rebuild, and restart Wokwi to restore normal operation.
-
-To also observe delivery at the broker, start the `mosquitto_sub` command below **before** starting Wokwi, adding `-C 5 -W 90` after `-v`. It should capture three messages before the outage and two after recovery, with the same boot-ID and sequence behavior shown in the Wokwi terminal.
 
 How to build the firmware for Wokwi:
 
 - Install PlatformIO and Wokwi for VS Code; open `firmware/` as the workspace and build `wokwi`.
-- Select a simulation profile by changing `syntheticProfile` in `firmware/include/wokwi_config.h`: `outside`, `inside`, `target-not-observed`, or `interruption`.
+- Select a simulation profile by changing `syntheticProfile` in `firmware/include/wokwi_config.h`: `entry-exit` (selected by default), `outside`, `inside`, `target-not-observed`, or `interruption`.
 - Copy `include/secrets.example.h` to the ignored `include/secrets.h`, then set `mqttPassword` to the same password as `infra/secrets/mqtt_wearable_password`.
-- Start the backend with `sh infra/scripts/up.sh` from the repository root. Wokwi for VS Code includes its private IoT gateway; start **Wokwi: Start Simulator** with the simulator tab visible. The firmware uses `Wokwi-GUEST` solely for transport and `host.wokwi.internal:1883` to reach the broker on the simulator host.
+- Start the backend with `sh infra/scripts/up.sh` from the repository root. Wokwi for VS Code includes its private IoT gateway; start **Wokwi: Start Simulator** with the simulator tab visible. The firmware uses `Wokwi-GUEST` solely for transport and connects to the broker at the LAN address in `include/wokwi_config.h` (default `192.168.1.49:1883`). Keep it in sync with `POC_BIND_ADDRESS` in `infra/config/defaults.env`; the broker is not exposed on the simulator host's `localhost`.
 - The broker's configured wearable username and the seeded device ID must both be `esp32-001`. The default Compose configuration and seed use that dedicated simulated identity.
 
 To verify broker delivery while the simulator runs, execute from the repository root:

@@ -7,6 +7,7 @@
 enum class SyntheticProfile {
   outside,
   inside,
+  entryExit,
   targetNotObserved,
   interruption,
 };
