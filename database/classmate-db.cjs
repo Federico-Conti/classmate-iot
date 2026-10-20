@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { DatabaseSync } = require("node:sqlite");
 
-const DEFAULT_MIGRATIONS_DIRECTORY = path.resolve(__dirname, "../migrations");
+const DEFAULT_MIGRATIONS_DIRECTORY = __dirname;
 
 function requireText(value, fieldName) {
     if (typeof value !== "string" || value.trim() === "") {

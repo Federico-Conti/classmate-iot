@@ -1,7 +1,7 @@
 module.exports = function registerClassMateDatabaseNode(RED) {
     const path = require("node:path");
     const databaseModulePath = process.env.CLASSMATE_DATABASE_MODULE
-        || path.resolve(__dirname, "../../../database/lib/classmate-db.cjs");
+        || path.resolve(__dirname, "../../../database/classmate-db.cjs");
     const { ClassMateDatabase } = require(databaseModulePath);
 
     const operations = {

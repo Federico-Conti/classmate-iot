@@ -2,7 +2,7 @@
   "parents": [
     {
       "id": "parent-001",
-      "code": "PARENT-001",
+      "code": "parent",
       "name": "Mario",
       "surname": "Rossi"
     }
@@ -12,18 +12,32 @@
       "id": "child-001",
       "name": "Giulia",
       "surname": "Rossi"
+    },
+    {
+      "id": "child-002",
+      "name": "Gino",
+      "surname": "Paoli"
     }
   ],
   "associations": [
     {
       "parentId": "parent-001",
       "childId": "child-001"
+    },
+    {
+      "parentId": "parent-001",
+      "childId": "child-002"
     }
   ],
   "devices": [
     {
       "id": "esp32-001",
       "childId": "child-001",
+      "firmwareVersion": "poc"
+    },
+    {
+      "id": "esp32-002",
+      "childId": "child-002",
       "firmwareVersion": "poc"
     }
   ]

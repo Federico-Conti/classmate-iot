@@ -48,7 +48,7 @@ services:
       MQTT_USERNAME: ${MQTT_NODERED_USERNAME}
       MQTT_PASSWORD_FILE: /run/secrets/mqtt_nodered_password
       SQLITE_PATH: /data/sqlite/classmate.db
-      CLASSMATE_DATABASE_MODULE: /opt/classmate/database/lib/classmate-db.cjs
+      CLASSMATE_DATABASE_MODULE: /opt/classmate/database/classmate-db.cjs
       RSSI_WINDOW_SIZE: ${RSSI_WINDOW_SIZE}
       RSSI_THRESHOLD: ${RSSI_THRESHOLD}
       RSSI_STABILITY_COUNT: ${RSSI_STABILITY_COUNT}
