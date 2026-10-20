@@ -1,9 +1,8 @@
-const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const { DatabaseSync } = require("node:sqlite");
 
-const DEFAULT_MIGRATIONS_DIRECTORY = __dirname;
+const SCHEMA_PATH = path.join(__dirname, "schema.sql");
 
 function requireText(value, fieldName) {
     if (typeof value !== "string" || value.trim() === "") {
@@ -40,57 +39,11 @@ function decodeCursor(cursor) {
     }
 }
 
-function migrationFiles(migrationsDirectory) {
-    return fs.readdirSync(migrationsDirectory)
-        .filter((fileName) => /^\d+_[a-z0-9_]+\.sql$/.test(fileName))
-        .sort();
-}
-
 function configureConnection(database) {
     database.exec("PRAGMA foreign_keys = ON;");
     database.exec("PRAGMA busy_timeout = 5000;");
     database.exec("PRAGMA journal_mode = WAL;");
     database.exec("PRAGMA synchronous = NORMAL;");
-}
-
-function migrateDatabase(database, migrationsDirectory = DEFAULT_MIGRATIONS_DIRECTORY) {
-    database.exec(`
-        CREATE TABLE IF NOT EXISTS schema_migrations (
-            version TEXT PRIMARY KEY,
-            checksum TEXT NOT NULL,
-            applied_at TEXT NOT NULL
-        ) STRICT;
-    `);
-
-    const applied = new Map(
-        database.prepare("SELECT version, checksum FROM schema_migrations").all()
-            .map((row) => [row.version, row.checksum]),
-    );
-
-    for (const fileName of migrationFiles(migrationsDirectory)) {
-        const version = fileName.split("_", 1)[0];
-        const sql = fs.readFileSync(path.join(migrationsDirectory, fileName), "utf8");
-        const checksum = crypto.createHash("sha256").update(sql).digest("hex");
-
-        if (applied.has(version)) {
-            if (applied.get(version) !== checksum) {
-                throw new Error(`Migration ${version} checksum does not match the applied migration`);
-            }
-            continue;
-        }
-
-        database.exec("BEGIN IMMEDIATE;");
-        try {
-            database.exec(sql);
-            database.prepare(
-                "INSERT INTO schema_migrations(version, checksum, applied_at) VALUES (?, ?, ?)",
-            ).run(version, checksum, new Date().toISOString());
-            database.exec("COMMIT;");
-        } catch (error) {
-            database.exec("ROLLBACK;");
-            throw error;
-        }
-    }
 }
 
 function mapParent(row) {
@@ -123,12 +76,11 @@ function mapEvent(row) {
 }
 
 class ClassMateDatabase {
-    constructor(databasePath, options = {}) {
+    constructor(databasePath) {
         this.databasePath = path.resolve(databasePath);
         fs.mkdirSync(path.dirname(this.databasePath), { recursive: true });
         this.database = new DatabaseSync(this.databasePath);
         configureConnection(this.database);
-        migrateDatabase(this.database, options.migrationsDirectory || DEFAULT_MIGRATIONS_DIRECTORY);
     }
 
     close() {
@@ -372,45 +324,44 @@ class ClassMateDatabase {
 
     provision(seed) {
         return this.transaction(() => {
-            const upsertParent = this.database.prepare(`
+            const existingTable = this.database.prepare(
+                "SELECT name FROM sqlite_master WHERE type = 'table' LIMIT 1",
+            ).get();
+            if (existingTable) {
+                throw new Error("Database already initialized; remove the container and SQLite volume before provisioning again");
+            }
+            this.database.exec(fs.readFileSync(SCHEMA_PATH, "utf8"));
+            const insertParent = this.database.prepare(`
                 INSERT INTO parents(id, code, name, surname, active)
                 VALUES (?, ?, ?, ?, ?)
-                ON CONFLICT(id) DO UPDATE SET
-                    code = excluded.code, name = excluded.name,
-                    surname = excluded.surname, active = excluded.active
             `);
-            const upsertChild = this.database.prepare(`
+            const insertChild = this.database.prepare(`
                 INSERT INTO children(id, name, surname, active)
                 VALUES (?, ?, ?, ?)
-                ON CONFLICT(id) DO UPDATE SET
-                    name = excluded.name, surname = excluded.surname, active = excluded.active
             `);
-            const upsertAssociation = this.database.prepare(`
+            const insertAssociation = this.database.prepare(`
                 INSERT INTO parent_child(parent_id, child_id, active)
                 VALUES (?, ?, ?)
-                ON CONFLICT(parent_id, child_id) DO UPDATE SET active = excluded.active
             `);
-            const upsertDevice = this.database.prepare(`
+            const insertDevice = this.database.prepare(`
                 INSERT INTO devices(id, child_id, active, firmware_version)
                 VALUES (?, NULL, ?, ?)
-                ON CONFLICT(id) DO UPDATE SET
-                    active = excluded.active, firmware_version = excluded.firmware_version
             `);
             for (const parent of seed.parents || []) {
-                upsertParent.run(parent.id, parent.code, parent.name, parent.surname, parent.active === false ? 0 : 1);
+                insertParent.run(parent.id, parent.code, parent.name, parent.surname, parent.active === false ? 0 : 1);
             }
             for (const child of seed.children || []) {
-                upsertChild.run(child.id, child.name, child.surname, child.active === false ? 0 : 1);
+                insertChild.run(child.id, child.name, child.surname, child.active === false ? 0 : 1);
             }
             for (const association of seed.associations || []) {
-                upsertAssociation.run(
+                insertAssociation.run(
                     association.parentId,
                     association.childId,
                     association.active === false ? 0 : 1,
                 );
             }
             for (const device of seed.devices || []) {
-                upsertDevice.run(
+                insertDevice.run(
                     device.id,
                     device.active === false ? 0 : 1,
                     device.firmwareVersion || null,
@@ -448,9 +399,7 @@ class ClassMateDatabase {
 
 module.exports = {
     ClassMateDatabase,
-    DEFAULT_MIGRATIONS_DIRECTORY,
     configureConnection,
     decodeCursor,
     encodeCursor,
-    migrateDatabase,
 };
