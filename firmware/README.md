@@ -10,7 +10,7 @@ A failed publish, broker/Wi-Fi outage, or synthetic interruption returns it to r
 
 ## MQTT telemetry payload
 
-The ESP32 publishes JSON to `classmate/v1/devices/esp32-001/telemetry` (QoS 1, not retained). The payload follows the [telemetry schema](../contracts/mqtt/schemas/telemetry.schema.json):
+The ESP32 publishes JSON to `classmate/v1/devices/esp32-001/telemetry` (QoS 1, not retained). The payload contains:
 
 | Field | Meaning |
 | --- | --- |

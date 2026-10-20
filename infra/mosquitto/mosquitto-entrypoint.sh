@@ -34,7 +34,6 @@ cat /mosquitto/config/acl.base.conf > "$acl_file"
 {
     printf '\nuser %s\n' "$MQTT_WEARABLE_USERNAME"
     printf 'topic write classmate/v1/devices/%s/telemetry\n' "$MQTT_WEARABLE_USERNAME"
-    printf 'topic read classmate/v1/devices/%s/config\n' "$MQTT_WEARABLE_USERNAME"
 } >> "$acl_file"
 chown mosquitto:mosquitto "$password_file" "$acl_file"
 exec /usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf
