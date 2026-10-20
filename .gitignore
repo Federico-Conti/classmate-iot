@@ -4,11 +4,9 @@
 **/tests/
 /docs
 
-/README.md
 
 # Local runtime configuration and credentials
 infra/secrets/*
-!infra/secrets/README.md
 !infra/secrets/*.example
 firmware/include/secrets.h
 firmware/wokwi-secrets.toml
