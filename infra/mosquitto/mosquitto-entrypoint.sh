@@ -3,7 +3,6 @@
 set -eu
 
 password_file=/tmp/classmate-mosquitto-passwords
-acl_file=/tmp/classmate-mosquitto-acl
 
 read_secret() {
     secret_file=$1
@@ -22,7 +21,7 @@ case "$MQTT_WEARABLE_USERNAME" in
         ;;
 esac
 
-rm -f "$password_file" "$acl_file"
+rm -f "$password_file"
 {
     printf '%s:%s\n' "$MQTT_WEARABLE_USERNAME" "$(read_secret /run/secrets/mqtt_wearable_password)"
     printf '%s:%s\n' "$MQTT_NODERED_USERNAME" "$(read_secret /run/secrets/mqtt_nodered_password)"
@@ -30,10 +29,5 @@ rm -f "$password_file" "$acl_file"
 } > "$password_file"
 
 mosquitto_passwd -U "$password_file"
-cat /mosquitto/config/acl.base.conf > "$acl_file"
-{
-    printf '\nuser %s\n' "$MQTT_WEARABLE_USERNAME"
-    printf 'topic write classmate/v1/devices/%s/telemetry\n' "$MQTT_WEARABLE_USERNAME"
-} >> "$acl_file"
-chown mosquitto:mosquitto "$password_file" "$acl_file"
+chown mosquitto:mosquitto "$password_file"
 exec /usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf

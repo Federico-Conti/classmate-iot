@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1110" viewBox="0 0 1800 1110" role="img" aria-labelledby="title desc"><title id="title">ClassMate — Architettura del sistema</title><desc id="desc">ESP32 simulato in Wokwi pubblica telemetria MQTT su Mosquitto. Node-RED valida e filtra RSSI, salva eventi e outbox in SQLite, pubblica gli eventi confermati su Mosquitto. ParentApp riceve eventi retained via MQTT e accede a risoluzione codice e cronologia via HTTP.</desc><defs>
+<marker id="3974c6" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0 L8 4 L0 8 Z" fill="#3974c6"/></marker>
+<marker id="3974c6start" markerWidth="9" markerHeight="9" refX="0" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M8 0 L0 4 L8 8 Z" fill="#3974c6"/></marker>
+<marker id="944b87" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0 L8 4 L0 8 Z" fill="#944b87"/></marker>
+<marker id="944b87start" markerWidth="9" markerHeight="9" refX="0" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M8 0 L0 4 L8 8 Z" fill="#944b87"/></marker>
+<marker id="19806d" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0 L8 4 L0 8 Z" fill="#19806d"/></marker>
+<marker id="19806dstart" markerWidth="9" markerHeight="9" refX="0" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M8 0 L0 4 L8 8 Z" fill="#19806d"/></marker>
+<marker id="637185" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0 L8 4 L0 8 Z" fill="#637185"/></marker>
+<marker id="637185start" markerWidth="9" markerHeight="9" refX="0" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M8 0 L0 4 L8 8 Z" fill="#637185"/></marker>
+</defs><rect width="1800" height="1110" fill="#fff"/>
+<rect x="60" y="155" width="325" height="735" rx="18" fill="#fcfdfd" stroke="#99b4b1" stroke-width="2" stroke-dasharray="8 7"/>
+<rect x="430" y="155" width="900" height="735" rx="18" fill="#fcfdff" stroke="#a2b3cc" stroke-width="2" stroke-dasharray="8 7"/>
+<rect x="1380" y="155" width="360" height="735" rx="18" fill="#fdfcfe" stroke="#b8a7c5" stroke-width="2" stroke-dasharray="8 7"/>
+<rect x="155" y="303" width="135" height="145" rx="12" fill="#226b57" stroke="#1b5445" stroke-width="2" />
+<rect x="180" y="324" width="84" height="60" rx="5" fill="#d2d7df" stroke="#acb7c6" stroke-width="2" />
+<text x="222" y="362" font-family="DejaVu Sans, sans-serif" font-size="19" fill="#234439" font-weight="700" text-anchor="middle">ESP32</text>
+<path d="M143 321h12 M290 321h12" stroke="#aeb9c3" stroke-width="6"/>
+<path d="M143 338h12 M290 338h12" stroke="#aeb9c3" stroke-width="6"/>
+<path d="M143 355h12 M290 355h12" stroke="#aeb9c3" stroke-width="6"/>
+<path d="M143 372h12 M290 372h12" stroke="#aeb9c3" stroke-width="6"/>
+<path d="M143 389h12 M290 389h12" stroke="#aeb9c3" stroke-width="6"/>
+<path d="M143 406h12 M290 406h12" stroke="#aeb9c3" stroke-width="6"/>
+<path d="M143 423h12 M290 423h12" stroke="#aeb9c3" stroke-width="6"/>
+<circle cx="180" cy="420" r="6" fill="#78d6a1"/>
+<text x="222" y="493" font-family="DejaVu Sans, sans-serif" font-size="24" fill="#21364a" font-weight="700" text-anchor="middle">Wokwi ESP32</text>
+<text x="222" y="523" font-family="DejaVu Sans, sans-serif" font-size="17" fill="#637185" font-weight="400" text-anchor="middle">Wearable simulato</text>
+<text x="222" y="560" font-family="DejaVu Sans, sans-serif" font-size="19" fill="#346b64" font-weight="600" text-anchor="middle">RSSI sintetico</text>
+<rect x="490" y="340" width="235" height="190" rx="16" fill="#fff" stroke="#c2d3eb" stroke-width="2" />
+<circle cx="558" cy="387" r="10" fill="#3974c6"/>
+<circle cx="604" cy="382" r="10" fill="#3974c6"/>
+<circle cx="650" cy="387" r="10" fill="#3974c6"/>
+<circle cx="604" cy="425" r="10" fill="#3974c6"/>
+<path d="M558 387L604 382L650 387 M604 382V425" fill="none" stroke="#3974c6" stroke-width="3"/>
+<text x="608" y="469" font-family="DejaVu Sans, sans-serif" font-size="24" fill="#21364a" font-weight="700" text-anchor="middle">Mosquitto</text>
+<text x="608" y="499" font-family="DejaVu Sans, sans-serif" font-size="16" fill="#637185" font-weight="400" text-anchor="middle">MQTT broker · :1883</text>
+<rect x="845" y="340" width="430" height="265" rx="16" fill="#fff" stroke="#dfb5b5" stroke-width="2" />
+<rect x="869" y="360" width="41" height="35" rx="7" fill="#a52c38" stroke="#a52c38" stroke-width="2" />
+<path d="M877 378h9l7-8h9 M886 378l7 8h9" fill="none" stroke="white" stroke-width="2"/>
+<text x="924" y="386" font-family="DejaVu Sans, sans-serif" font-size="25" fill="#7e2631" font-weight="700" text-anchor="start">Node-RED</text>
+<text x="869" y="425" font-family="DejaVu Sans, sans-serif" font-size="17" fill="#26364a" font-weight="400" text-anchor="start">1. Validazione</text>
+<text x="869" y="457" font-family="DejaVu Sans, sans-serif" font-size="17" fill="#26364a" font-weight="400" text-anchor="start">2. Identificazione</text>
+<text x="869" y="489" font-family="DejaVu Sans, sans-serif" font-size="17" fill="#26364a" font-weight="400" text-anchor="start">3. Elaborazione</text>
+<text x="869" y="521" font-family="DejaVu Sans, sans-serif" font-size="17" fill="#26364a" font-weight="400" text-anchor="start">4. Classificazione</text>  
+<text x="869" y="578" font-family="DejaVu Sans, sans-serif" font-size="17" fill="#19806d" font-weight="600" text-anchor="start">HTTP :1880</text>
+<path d="M907 736V803C907 828 1212 828 1212 803V736" fill="#edf2f8" stroke="#637185" stroke-width="2"/>
+<ellipse cx="1059.5" cy="736" rx="152.5" ry="22" fill="#f7f9fc" stroke="#637185" stroke-width="2"/>
+<text x="1060" y="779" font-family="DejaVu Sans, sans-serif" font-size="24" fill="#33475f" font-weight="700" text-anchor="middle">SQLite</text>
+<text x="1060" y="849" font-family="DejaVu Sans, sans-serif" font-size="15" fill="#637185" font-weight="400" text-anchor="middle">Associazioni</text>
+<rect x="1497" y="335" width="126" height="207" rx="18" fill="#f4f0f7" stroke="#755780" stroke-width="2" />
+<rect x="1507" y="358" width="106" height="154" rx="6" fill="#fff" stroke="#d5c9de" stroke-width="2" />
+<path d="M1543 345h34" stroke="#755780" stroke-width="4" stroke-linecap="round"/>
+<circle cx="1560" cy="528" r="5" fill="#755780"/>
+<circle cx="1560" cy="403" r="18" fill="#def0e8"/>
+<path d="M1551 403l6 6 12-13" fill="none" stroke="#19806d" stroke-width="4"/>
+<text x="1560" y="450" font-family="DejaVu Sans, sans-serif" font-size="15" fill="#19806d" font-weight="600" text-anchor="middle">Ingresso</text>
+<text x="1560" y="485" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#637185" font-weight="400" text-anchor="middle">Cronologia</text>
+<text x="1560" y="584" font-family="DejaVu Sans, sans-serif" font-size="25" fill="#513b63" font-weight="700" text-anchor="middle">ParentApp</text>
+<path d="M302 405H490" fill="none" stroke="#3974c6" stroke-width="3" stroke-linejoin="round" marker-end="url(#3974c6)" />
+<text x="397" y="365" font-family="DejaVu Sans, sans-serif" font-size="16" fill="#3974c6" font-weight="600" text-anchor="middle">Publisher</text>
+<path d="M725 405H845" fill="none" stroke="#3974c6" stroke-width="3" stroke-linejoin="round" marker-end="url(#3974c6)" />
+<text x="785" y="370" font-family="DejaVu Sans, sans-serif" font-size="15" fill="#3974c6" font-weight="600" text-anchor="middle">Subscriber</text>
+<path d="M845 546H785V622H608V530" fill="none" stroke="#944b87" stroke-width="3" stroke-linejoin="round" marker-end="url(#944b87)" />
+<text x="700" y="655" font-family="DejaVu Sans, sans-serif" font-size="15" fill="#944b87" font-weight="600" text-anchor="middle">Publisher</text>
+<path d="M608 340V267H1560V335" fill="none" stroke="#944b87" stroke-width="3" stroke-linejoin="round" marker-end="url(#944b87)" />
+<text x="1070" y="255" font-family="DejaVu Sans, sans-serif" font-size="16" fill="#944b87" font-weight="600" text-anchor="middle">Subscriber</text>
+<path d="M1060 605V713" fill="none" stroke="#637185" stroke-width="3" stroke-linejoin="round" marker-end="url(#637185)" marker-start="url(#637185start)" />
+<text x="1090" y="654" font-family="DejaVu Sans, sans-serif" font-size="15" fill="#637185" font-weight="600" text-anchor="start">Accesso locale</text>
+<path d="M1497 485H1353V685H1245V578H1275" fill="none" stroke="#19806d" stroke-width="3" stroke-linejoin="round" marker-end="url(#19806d)" marker-start="url(#19806dstart)" />
+<text x="1413" y="647" font-family="DejaVu Sans, sans-serif" font-size="16" fill="#19806d" font-weight="600" text-anchor="middle">HTTP</text>
+<path d="M60 929H1740" stroke="#dce3eb"/>
+<text x="60" y="967" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#3974c6" font-weight="700" text-anchor="start">TELEMETRIA</text>
+<text x="60" y="996" font-family="DejaVu Sans, sans-serif" font-size="15" fill="#26364a" font-weight="400" text-anchor="start">classmate/v1/devices/{deviceId}/telemetry</text>
+<text x="700" y="967" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#944b87" font-weight="700" text-anchor="start">EVENTI CONFERMATI</text>
+<text x="700" y="996" font-family="DejaVu Sans, sans-serif" font-size="15" fill="#26364a" font-weight="400" text-anchor="start">classmate/v1/children/{childId}/events</text>
+
+<!-- Platform icons beside the right container borders -->
+<rect x="1290" y="787" width="79" height="82" rx="8" fill="white"/>
+<rect x="1707" y="787" width="67" height="90" rx="8" fill="white"/>
+<g transform="translate(1294 796) scale(0.70)" role="img" aria-label="Docker">
+<title>Docker</title>
+<g fill="#2496ED">
+<rect x="8" y="22" width="12" height="11" rx="1"/>
+<rect x="22" y="22" width="12" height="11" rx="1"/>
+<rect x="36" y="22" width="12" height="11" rx="1"/>
+<rect x="50" y="22" width="12" height="11" rx="1"/>
+<rect x="22" y="9" width="12" height="11" rx="1"/>
+<rect x="36" y="9" width="12" height="11" rx="1"/>
+<rect x="36" y="-4" width="12" height="11" rx="1"/>
+<path d="M3 36 H66 C72 36 77 34 81 30 C76 27 75 21 77 15 C84 18 88 23 88 29 C94 28 99 29 103 32 C98 38 91 41 82 40 C76 58 63 68 41 68 C19 68 6 57 3 36Z"/>
+</g>
+<circle cx="18" cy="44" r="2" fill="white"/>
+<text x="48" y="88" text-anchor="middle" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#3974c6" font-weight="600">Docker</text>
+</g>
+<g transform="translate(1716 796) scale(0.80)" role="img" aria-label="Android">
+<title>Android</title>
+<g fill="#3DDC84" stroke="#3DDC84" stroke-linecap="round">
+<path d="M6 26 A24 24 0 0 1 54 26 Z" stroke="none"/>
+<path d="M15 7 L10 -2 M45 7 L50 -2" stroke-width="3"/>
+<rect x="6" y="29" width="48" height="33" rx="5" stroke="none"/>
+<path d="M0 33V53 M60 33V53 M18 60V74 M42 60V74" stroke-width="8"/>
+</g>
+<circle cx="19" cy="17" r="2.5" fill="#fff"/>
+<circle cx="41" cy="17" r="2.5" fill="#fff"/>
+<text x="30" y="94" text-anchor="middle" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#238a58" font-weight="600">Android</text>
+</g>
+</svg>

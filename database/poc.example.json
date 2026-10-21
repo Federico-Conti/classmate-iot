@@ -2,7 +2,7 @@
   "parents": [
     {
       "id": "parent-001",
-      "code": "parent",
+      "code": "abcd",
       "name": "Mario",
       "surname": "Rossi"
     }
