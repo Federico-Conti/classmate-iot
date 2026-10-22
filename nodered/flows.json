@@ -681,57 +681,6 @@
     ]
   },
   {
-    "id": "children-request",
-    "type": "http in",
-    "z": "api-data-tab",
-    "name": "GET /api/v1/children",
-    "url": "/api/v1/children",
-    "method": "get",
-    "upload": false,
-    "swaggerDoc": "",
-    "x": 190,
-    "y": 300,
-    "wires": [
-      [
-        "children-prepare"
-      ]
-    ]
-  },
-  {
-    "id": "children-prepare",
-    "type": "function",
-    "z": "api-data-tab",
-    "name": "Associated children parameters",
-    "func": "msg.dbOperation = 'listAssociatedChildren';\nmsg.params = { code: msg.req.headers['x-parent-code'] };\nreturn msg;",
-    "outputs": 1,
-    "timeout": 0,
-    "noerr": 0,
-    "initialize": "",
-    "finalize": "",
-    "libs": [],
-    "x": 545,
-    "y": 300,
-    "wires": [
-      [
-        "children-db"
-      ]
-    ]
-  },
-  {
-    "id": "children-db",
-    "type": "classmate-db",
-    "z": "api-data-tab",
-    "name": "List children",
-    "database": "/data/sqlite/classmate.db",
-    "x": 895,
-    "y": 300,
-    "wires": [
-      [
-        "list-response"
-      ]
-    ]
-  },
-  {
     "id": "history-request",
     "type": "http in",
     "z": "api-data-tab",
@@ -796,26 +745,6 @@
     "libs": [],
     "x": 1230,
     "y": 450,
-    "wires": [
-      [
-        "api-response"
-      ]
-    ]
-  },
-  {
-    "id": "list-response",
-    "type": "function",
-    "z": "api-data-tab",
-    "name": "List response",
-    "func": "msg.statusCode = 200;\nmsg.headers = { 'content-type': 'application/json' };\nmsg.payload = { children: msg.payload };\nreturn msg;",
-    "outputs": 1,
-    "timeout": 0,
-    "noerr": 0,
-    "initialize": "",
-    "finalize": "",
-    "libs": [],
-    "x": 1230,
-    "y": 300,
     "wires": [
       [
         "api-response"

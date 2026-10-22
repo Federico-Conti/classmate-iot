@@ -131,7 +131,6 @@ Esempi API Node-RED, con il codice del seed dimostrativo:
 ```sh
 curl -sS -X POST -H 'Content-Type: application/json' \
   -d '{"code":"parent"}' http://192.168.1.49:1880/api/v1/parents/resolve
-curl -sS -H 'x-parent-code: parent' http://192.168.1.49:1880/api/v1/children
 curl -sS -H 'x-parent-code: parent' \
   'http://192.168.1.49:1880/api/v1/children/child-001/events?limit=20'
 ```
@@ -140,7 +139,6 @@ curl -sS -H 'x-parent-code: parent' \
 | --- | --- | --- |
 | `GET /healthz` | Nessuna | `200` con `status`, `service`, `database`; `503` se il database non è sano |
 | `POST /api/v1/parents/resolve` | JSON `{ "code": "..." }` | Genitore con `children`, oppure `404` `not_found` |
-| `GET /api/v1/children` | Header `x-parent-code` | `{ "children": [...] }` |
 | `GET /api/v1/children/:childId/events` | Header `x-parent-code`, query `limit` (default 20, massimo 100), `cursor` opzionale | `{ "events": [...], "nextCursor": null | "..." }` oppure `404` se non associato |
 
 Gli eventi HTTP contengono `eventId`, `childId`, `deviceId`, `type`, `receivedAt`, `weightedRssi`. Usare `nextCursor` senza interpretarlo. L'accesso tramite codice **non è una password né un'autorizzazione robusta**; chi conosce il codice può leggere i dati associati nel POC.

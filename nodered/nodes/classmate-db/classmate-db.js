@@ -7,7 +7,6 @@ module.exports = function registerClassMateDatabaseNode(RED) {
     const operations = {
         health: (database) => database.health(),
         resolveParent: (database, parameters) => database.resolveParent(parameters.code),
-        listAssociatedChildren: (database, parameters) => database.listAssociatedChildren(parameters.code),
         getChildHistory: (database, parameters) => database.getChildHistory(
             parameters.code,
             parameters.childId,
