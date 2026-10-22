@@ -32,13 +32,11 @@
   "devices": [
     {
       "id": "esp32-001",
-      "childId": "child-001",
-      "firmwareVersion": "poc"
+      "childId": "child-001"
     },
     {
       "id": "esp32-002",
-      "childId": "child-002",
-      "firmwareVersion": "poc"
+      "childId": "child-002"
     }
   ]
 }

@@ -111,7 +111,7 @@ class ClassMateDatabase {
         const parent = mapParent(this.database.prepare(`
             SELECT id, code, name, surname
             FROM parents
-            WHERE code = ? COLLATE NOCASE AND active = 1
+            WHERE code = ? COLLATE NOCASE
         `).get(requireText(code, "code")));
         return parent ? { ...parent, children: this.listAssociatedChildren(code) } : null;
     }
@@ -120,9 +120,9 @@ class ClassMateDatabase {
         return this.database.prepare(`
             SELECT c.id, c.name, c.surname
             FROM parents p
-            JOIN parent_child pc ON pc.parent_id = p.id AND pc.active = 1
-            JOIN children c ON c.id = pc.child_id AND c.active = 1
-            WHERE p.code = ? COLLATE NOCASE AND p.active = 1
+            JOIN parent_child pc ON pc.parent_id = p.id
+            JOIN children c ON c.id = pc.child_id
+            WHERE p.code = ? COLLATE NOCASE
             ORDER BY c.surname, c.name, c.id
         `).all(requireText(code, "code")).map(mapChild);
     }
@@ -131,9 +131,9 @@ class ClassMateDatabase {
         return Boolean(this.database.prepare(`
             SELECT 1
             FROM parents p
-            JOIN parent_child pc ON pc.parent_id = p.id AND pc.active = 1
-            JOIN children c ON c.id = pc.child_id AND c.active = 1
-            WHERE p.code = ? COLLATE NOCASE AND p.active = 1 AND c.id = ?
+            JOIN parent_child pc ON pc.parent_id = p.id
+            JOIN children c ON c.id = pc.child_id
+            WHERE p.code = ? COLLATE NOCASE AND c.id = ?
         `).get(requireText(code, "code"), requireText(childId, "childId")));
     }
 
@@ -171,12 +171,11 @@ class ClassMateDatabase {
         };
     }
 
-    getActiveAssignmentByDevice(deviceId) {
+    getAssignmentByDevice(deviceId) {
         const row = this.database.prepare(`
             SELECT d.id AS device_id, d.child_id
             FROM devices d
-            JOIN children c ON c.id = d.child_id AND c.active = 1
-            WHERE d.id = ? AND d.active = 1 AND d.child_id IS NOT NULL
+            WHERE d.id = ? AND d.child_id IS NOT NULL
         `).get(requireText(deviceId, "deviceId"));
 
         return row ? {
@@ -207,7 +206,7 @@ class ClassMateDatabase {
         const lastSequence = requireInteger(state.lastSequence, "lastSequence");
 
         return this.transaction(() => {
-            if (!this.getActiveAssignmentByDevice(deviceId)) {
+            if (!this.getAssignmentByDevice(deviceId)) {
                 return { accepted: false, reason: "unassigned-device" };
             }
             const previous = this.database.prepare(
@@ -240,9 +239,9 @@ class ClassMateDatabase {
                 return { inserted: false, eventId };
             }
 
-            const assignment = this.getActiveAssignmentByDevice(deviceId);
+            const assignment = this.getAssignmentByDevice(deviceId);
             if (!assignment || assignment.childId !== childId) {
-                throw new Error(`Device ${deviceId} is not actively assigned to child ${childId}`);
+                throw new Error(`Device ${deviceId} is not assigned to child ${childId}`);
             }
 
             const type = requireText(event.type, "type");
@@ -327,40 +326,32 @@ class ClassMateDatabase {
             }
             this.database.exec(fs.readFileSync(SCHEMA_PATH, "utf8"));
             const insertParent = this.database.prepare(`
-                INSERT INTO parents(id, code, name, surname, active)
-                VALUES (?, ?, ?, ?, ?)
-            `);
-            const insertChild = this.database.prepare(`
-                INSERT INTO children(id, name, surname, active)
+                INSERT INTO parents(id, code, name, surname)
                 VALUES (?, ?, ?, ?)
             `);
-            const insertAssociation = this.database.prepare(`
-                INSERT INTO parent_child(parent_id, child_id, active)
+            const insertChild = this.database.prepare(`
+                INSERT INTO children(id, name, surname)
                 VALUES (?, ?, ?)
             `);
+            const insertAssociation = this.database.prepare(`
+                INSERT INTO parent_child(parent_id, child_id)
+                VALUES (?, ?)
+            `);
             const insertDevice = this.database.prepare(`
-                INSERT INTO devices(id, child_id, active, firmware_version)
-                VALUES (?, NULL, ?, ?)
+                INSERT INTO devices(id, child_id)
+                VALUES (?, NULL)
             `);
             for (const parent of seed.parents || []) {
-                insertParent.run(parent.id, parent.code, parent.name, parent.surname, parent.active === false ? 0 : 1);
+                insertParent.run(parent.id, parent.code, parent.name, parent.surname);
             }
             for (const child of seed.children || []) {
-                insertChild.run(child.id, child.name, child.surname, child.active === false ? 0 : 1);
+                insertChild.run(child.id, child.name, child.surname);
             }
             for (const association of seed.associations || []) {
-                insertAssociation.run(
-                    association.parentId,
-                    association.childId,
-                    association.active === false ? 0 : 1,
-                );
+                insertAssociation.run(association.parentId, association.childId);
             }
             for (const device of seed.devices || []) {
-                insertDevice.run(
-                    device.id,
-                    device.active === false ? 0 : 1,
-                    device.firmwareVersion || null,
-                );
+                insertDevice.run(device.id);
             }
             for (const device of seed.devices || []) {
                 if (device.childId) {
@@ -378,13 +369,13 @@ class ClassMateDatabase {
 
     assignDeviceWithoutTransaction(deviceId, childId) {
         const child = this.database.prepare(
-            "SELECT id FROM children WHERE id = ? AND active = 1",
+            "SELECT id FROM children WHERE id = ?",
         ).get(requireText(childId, "childId"));
         if (!child) {
-            throw new Error(`Active child not found: ${childId}`);
+            throw new Error(`Child not found: ${childId}`);
         }
         const result = this.database.prepare(
-            "UPDATE devices SET child_id = ?, active = 1 WHERE id = ?",
+            "UPDATE devices SET child_id = ? WHERE id = ?",
         ).run(childId, requireText(deviceId, "deviceId"));
         if (result.changes !== 1) {
             throw new Error(`Device not found: ${deviceId}`);

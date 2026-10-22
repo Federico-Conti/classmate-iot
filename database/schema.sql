@@ -2,32 +2,24 @@ CREATE TABLE parents (
     id TEXT PRIMARY KEY,
     code TEXT NOT NULL COLLATE NOCASE UNIQUE,
     name TEXT NOT NULL,
-    surname TEXT NOT NULL,
-    active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1))
+    surname TEXT NOT NULL
 ) STRICT;
 
 CREATE TABLE children (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
-    surname TEXT NOT NULL,
-    active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1))
+    surname TEXT NOT NULL
 ) STRICT;
 
 CREATE TABLE parent_child (
     parent_id TEXT NOT NULL REFERENCES parents(id) ON DELETE CASCADE,
     child_id TEXT NOT NULL REFERENCES children(id) ON DELETE CASCADE,
-    active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
     PRIMARY KEY (parent_id, child_id)
 ) STRICT;
 
 CREATE TABLE devices (
     id TEXT PRIMARY KEY,
-    child_id TEXT REFERENCES children(id) ON DELETE RESTRICT,
-    active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
-    firmware_version TEXT,
-    active_child_id TEXT GENERATED ALWAYS AS (
-        CASE WHEN active = 1 THEN child_id ELSE NULL END
-    ) STORED UNIQUE
+    child_id TEXT UNIQUE REFERENCES children(id) ON DELETE RESTRICT
 ) STRICT;
 
 CREATE TABLE device_state (

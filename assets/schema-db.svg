@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1640" height="985" viewBox="50 255 1640 985" role="img" aria-labelledby="title desc">
+  <title id="title">ClassMate — tabelle e associazioni</title>
+  <desc id="desc">Sette tabelle: parents, parent_child, children, devices, device_state, attendance_events ed event_outbox. I collegamenti indicano le chiavi esterne e le cardinalità dei record referenziati e referenzianti.</desc>
+  <defs>
+    <style>
+      text { font-family: Inter, Arial, sans-serif; fill: #17243b; }
+      .card { fill: #fff; stroke: #d5deeb; stroke-width: 2; }
+      .table-title { font-size: 24px; font-weight: 750; fill: #fff; }
+      .row { font-size: 18px; }
+      .type { font-size: 16px; fill: #64748b; text-anchor: end; }
+      .edge { fill: none; stroke: #8093ae; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+      .edge-label { font-size: 16px; font-weight: 700; fill: #405371; text-anchor: middle; }
+    </style>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="5" stdDeviation="9" flood-color="#152b49" flood-opacity=".10"/>
+    </filter>
+  </defs>
+
+  <rect x="50" y="255" width="1640" height="985" fill="#f5f8fc"/>
+
+  <path class="edge" d="M 480 372 H 620"/>
+  <text x="500" y="359" class="edge-label">1</text><text x="593" y="359" class="edge-label">0..N</text>
+  <path class="edge" d="M 1020 372 H 1160"/>
+  <text x="1048" y="359" class="edge-label">0..N</text><text x="1137" y="359" class="edge-label">1</text>
+  <path class="edge" d="M 1360 510 V 595"/>
+  <text x="1328" y="534" class="edge-label">1</text><text x="1324" y="584" class="edge-label">0..1</text>
+  <path class="edge" d="M 1020 692 H 1160"/>
+  <text x="1040" y="678" class="edge-label">0..1</text><text x="1135" y="678" class="edge-label">1</text>
+  <path class="edge" d="M 1560 418 H 1655 V 1066 H 1560"/>
+  <text x="1590" y="407" class="edge-label">1</text><text x="1602" y="1052" class="edge-label">0..N</text>
+  <path class="edge" d="M 1360 856 V 951"/>
+  <text x="1328" y="880" class="edge-label">1</text><text x="1326" y="939" class="edge-label">0..N</text>
+  <path class="edge" d="M 1020 1075 H 1160"/>
+  <text x="1042" y="1061" class="edge-label">0..1</text><text x="1136" y="1061" class="edge-label">1</text>
+
+  <g filter="url(#shadow)">
+    <rect class="card" x="80" y="275" width="400" height="235" rx="16"/>
+    <path d="M 96 275 H 464 Q 480 275 480 291 V 330 H 80 V 291 Q 80 275 96 275" fill="#2453a6"/>
+    <text x="103" y="312" class="table-title">parents</text>
+    <text x="103" y="361" class="row">id <tspan fill="#2453a6" font-weight="700">PK</tspan></text><text x="454" y="361" class="type">TEXT</text>
+    <text x="103" y="397" class="row">code <tspan fill="#2453a6" font-weight="700">UQ</tspan></text><text x="454" y="397" class="type">TEXT</text>
+    <text x="103" y="433" class="row">name, surname</text><text x="454" y="433" class="type">TEXT</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect class="card" x="620" y="275" width="400" height="235" rx="16"/>
+    <path d="M 636 275 H 1004 Q 1020 275 1020 291 V 330 H 620 V 291 Q 620 275 636 275" fill="#6154aa"/>
+    <text x="643" y="312" class="table-title">parent_child</text>
+    <text x="643" y="361" class="row">parent_id <tspan fill="#6154aa" font-weight="700">PK, FK</tspan></text><text x="994" y="361" class="type">TEXT</text>
+    <text x="643" y="397" class="row">child_id <tspan fill="#6154aa" font-weight="700">PK, FK</tspan></text><text x="994" y="397" class="type">TEXT</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect class="card" x="1160" y="275" width="400" height="235" rx="16"/>
+    <path d="M 1176 275 H 1544 Q 1560 275 1560 291 V 330 H 1160 V 291 Q 1160 275 1176 275" fill="#0d7d82"/>
+    <text x="1183" y="312" class="table-title">children</text>
+    <text x="1183" y="361" class="row">id <tspan fill="#0d7d82" font-weight="700">PK</tspan></text><text x="1534" y="361" class="type">TEXT</text>
+    <text x="1183" y="397" class="row">name</text><text x="1534" y="397" class="type">TEXT</text>
+    <text x="1183" y="433" class="row">surname</text><text x="1534" y="433" class="type">TEXT</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect class="card" x="620" y="595" width="400" height="261" rx="16"/>
+    <path d="M 636 595 H 1004 Q 1020 595 1020 611 V 650 H 620 V 611 Q 620 595 636 595" fill="#6154aa"/>
+    <text x="643" y="632" class="table-title">device_state</text>
+    <text x="643" y="681" class="row">device_id <tspan fill="#6154aa" font-weight="700">PK, FK</tspan></text><text x="994" y="681" class="type">TEXT</text>
+    <text x="643" y="717" class="row">last_received_at</text><text x="994" y="717" class="type">TEXT</text>
+    <text x="643" y="753" class="row">last_boot_id</text><text x="994" y="753" class="type">TEXT</text>
+    <text x="643" y="789" class="row">last_sequence</text><text x="994" y="789" class="type">INTEGER</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect class="card" x="1160" y="595" width="400" height="261" rx="16"/>
+    <path d="M 1176 595 H 1544 Q 1560 595 1560 611 V 650 H 1160 V 611 Q 1160 595 1176 595" fill="#0d7d82"/>
+    <text x="1183" y="632" class="table-title">devices</text>
+    <text x="1183" y="681" class="row">id <tspan fill="#0d7d82" font-weight="700">PK</tspan></text><text x="1534" y="681" class="type">TEXT</text>
+    <text x="1183" y="717" class="row">child_id <tspan fill="#0d7d82" font-weight="700">FK, UQ, NULL</tspan></text><text x="1534" y="717" class="type">TEXT</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect class="card" x="620" y="951" width="400" height="261" rx="16"/>
+    <path d="M 636 951 H 1004 Q 1020 951 1020 967 V 1006 H 620 V 967 Q 620 951 636 951" fill="#6154aa"/>
+    <text x="643" y="988" class="table-title">event_outbox</text>
+    <text x="643" y="1037" class="row">event_id <tspan fill="#6154aa" font-weight="700">PK, FK</tspan></text><text x="994" y="1037" class="type">TEXT</text>
+    <text x="643" y="1073" class="row">topic</text><text x="994" y="1073" class="type">TEXT</text>
+    <text x="643" y="1109" class="row">payload <tspan fill="#6154aa" font-weight="700">JSON</tspan></text><text x="994" y="1109" class="type">TEXT</text>
+    <text x="643" y="1145" class="row">published_at <tspan fill="#6154aa" font-weight="700">NULL</tspan></text><text x="994" y="1145" class="type">TEXT</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect class="card" x="1160" y="951" width="400" height="261" rx="16"/>
+    <path d="M 1176 951 H 1544 Q 1560 951 1560 967 V 1006 H 1160 V 967 Q 1160 951 1176 951" fill="#0d7d82"/>
+    <text x="1183" y="988" class="table-title">attendance_events</text>
+    <text x="1183" y="1037" class="row">event_id <tspan fill="#0d7d82" font-weight="700">PK</tspan></text><text x="1534" y="1037" class="type">TEXT</text>
+    <text x="1183" y="1073" class="row">child_id <tspan fill="#0d7d82" font-weight="700">FK</tspan></text><text x="1534" y="1073" class="type">TEXT</text>
+    <text x="1183" y="1109" class="row">device_id <tspan fill="#0d7d82" font-weight="700">FK</tspan></text><text x="1534" y="1109" class="type">TEXT</text>
+    <text x="1183" y="1145" class="row">type, received_at</text><text x="1534" y="1145" class="type">TEXT</text>
+    <text x="1183" y="1181" class="row">weighted_rssi</text><text x="1534" y="1181" class="type">REAL</text>
+  </g>
+
+</svg>
