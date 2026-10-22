@@ -17,11 +17,6 @@ module.exports = function registerClassMateDatabaseNode(RED) {
         getLatestConfirmedEvent: (database, parameters) => database.getLatestConfirmedEvent(parameters.childId),
         updateDeviceState: (database, parameters) => database.updateDeviceState(parameters),
         commitAttendanceEvent: (database, parameters) => database.commitAttendanceEvent(parameters),
-        listPendingOutbox: (database, parameters) => database.listPendingOutbox(parameters.limit),
-        markOutboxPublished: (database, parameters) => database.markOutboxPublished(
-            parameters.eventId,
-            parameters.publishedAt,
-        ),
     };
 
     function ClassMateDatabaseNode(config) {

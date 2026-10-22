@@ -1,9 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1520" height="546" viewBox="40 176 1520 546" role="img" aria-labelledby="title desc"><title id="title">ClassMate — confronto IN e OUT</title><desc id="desc">Due card con figure semplici del bambino prive di oggetti. IN con RSSI medio pesato sopra −45 dBm; OUT con RSSI medio pesato alla soglia o sotto. Evento entry o exit dopo conferma stabile, solo al cambio di stato. Area rappresentata in modo concettuale.</desc><rect x="40" y="176" width="1520" height="546" fill="#F3F6FA"/><rect x="60" y="196" width="720" height="506" rx="24" fill="#FFFFFF" stroke="#DDE5ED"/>
 <rect x="84" y="220" width="48" height="40" rx="12" fill="#E9F7F1" stroke="none"/>
-<text x="108" y="247" font-family="DejaVu Sans, sans-serif" font-size="18" font-weight="700" fill="#087F67" text-anchor="middle">01</text>
-<text x="148" y="249" font-family="DejaVu Sans, sans-serif" font-size="25" font-weight="700" fill="#152B42" text-anchor="start">Dentro l’area · IN</text>
-<text x="148" y="278" font-family="DejaVu Sans, sans-serif" font-size="17" font-weight="400" fill="#61758A" text-anchor="start">Segnale medio sopra la soglia</text>
+<text x="108" y="247" font-family="DejaVu Sans, sans-serif" font-size="18" font-weight="700" fill="#087F67" text-anchor="middle">ENTRY</text>
 <ellipse cx="325" cy="440" rx="199" ry="120" fill="#E9F7F1" stroke="#087F67" stroke-width="2" stroke-dasharray="7 8"/>
 <g transform="translate(236,445)">
 <rect x="-42" y="0" width="84" height="31" rx="8" fill="#FFFFFF" stroke="#087F67"/>
@@ -28,12 +26,9 @@
 <text x="104" y="649" font-family="DejaVu Sans, sans-serif" font-size="26" font-weight="700" fill="#087F67" text-anchor="start">&gt; −45 dBm</text>
 <text x="380" y="617" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="600" fill="#152B42" text-anchor="start">Dopo conferma stabile</text>
 <text x="380" y="649" font-family="DejaVu Sans, sans-serif" font-size="25" font-weight="700" fill="#087F67" text-anchor="start">entry</text>
-<text x="462" y="648" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="400" fill="#61758A" text-anchor="start">solo se cambia lo stato</text>
 <rect x="820" y="196" width="720" height="506" rx="24" fill="#FFFFFF" stroke="#DDE5ED"/>
 <rect x="844" y="220" width="48" height="40" rx="12" fill="#FFF3E9" stroke="none"/>
-<text x="868" y="247" font-family="DejaVu Sans, sans-serif" font-size="18" font-weight="700" fill="#B85B25" text-anchor="middle">02</text>
-<text x="908" y="249" font-family="DejaVu Sans, sans-serif" font-size="25" font-weight="700" fill="#152B42" text-anchor="start">Fuori dall’area · OUT</text>
-<text x="908" y="278" font-family="DejaVu Sans, sans-serif" font-size="17" font-weight="400" fill="#61758A" text-anchor="start">Segnale medio alla soglia o sotto</text>
+<text x="868" y="247" font-family="DejaVu Sans, sans-serif" font-size="18" font-weight="700" fill="#B85B25" text-anchor="middle">Exit</text>
 <ellipse cx="1085" cy="440" rx="199" ry="120" fill="#FFF3E9" stroke="#B85B25" stroke-width="2" stroke-dasharray="7 8"/>
 <g transform="translate(996,445)">
 <rect x="-42" y="0" width="84" height="31" rx="8" fill="#FFFFFF" stroke="#B85B25"/>
@@ -58,5 +53,4 @@
 <text x="864" y="649" font-family="DejaVu Sans, sans-serif" font-size="26" font-weight="700" fill="#B85B25" text-anchor="start">≤ −45 dBm</text>
 <text x="1140" y="617" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="600" fill="#152B42" text-anchor="start">Dopo conferma stabile</text>
 <text x="1140" y="649" font-family="DejaVu Sans, sans-serif" font-size="25" font-weight="700" fill="#B85B25" text-anchor="start">exit</text>
-<text x="1222" y="648" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="400" fill="#61758A" text-anchor="start">solo se cambia lo stato</text>
 </svg>

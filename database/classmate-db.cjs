@@ -173,8 +173,7 @@ class ClassMateDatabase {
 
     getActiveAssignmentByDevice(deviceId) {
         const row = this.database.prepare(`
-            SELECT d.id AS device_id, d.child_id, d.firmware_version,
-                   c.name AS child_name, c.surname AS child_surname
+            SELECT d.id AS device_id, d.child_id
             FROM devices d
             JOIN children c ON c.id = d.child_id AND c.active = 1
             WHERE d.id = ? AND d.active = 1 AND d.child_id IS NOT NULL
@@ -183,9 +182,6 @@ class ClassMateDatabase {
         return row ? {
             deviceId: row.device_id,
             childId: row.child_id,
-            firmwareVersion: row.firmware_version,
-            childName: row.child_name,
-            childSurname: row.child_surname,
         } : null;
     }
 
@@ -299,7 +295,7 @@ class ClassMateDatabase {
 
     listPendingOutbox(limit = 100) {
         return this.database.prepare(`
-            SELECT outbox.event_id, outbox.topic, outbox.payload, outbox.attempts
+            SELECT outbox.event_id, outbox.topic, outbox.payload
             FROM event_outbox AS outbox
             JOIN attendance_events AS event ON event.event_id = outbox.event_id
             WHERE outbox.published_at IS NULL
@@ -309,14 +305,13 @@ class ClassMateDatabase {
             eventId: row.event_id,
             topic: row.topic,
             payload: JSON.parse(row.payload),
-            attempts: row.attempts,
         }));
     }
 
     markOutboxPublished(eventId, publishedAt) {
         const result = this.database.prepare(`
             UPDATE event_outbox
-            SET published_at = ?, attempts = attempts + 1
+            SET published_at = ?
             WHERE event_id = ? AND published_at IS NULL
         `).run(requireText(publishedAt, "publishedAt"), requireText(eventId, "eventId"));
         return result.changes === 1;

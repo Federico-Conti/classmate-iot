@@ -51,6 +51,5 @@ CREATE TABLE event_outbox (
     event_id TEXT PRIMARY KEY REFERENCES attendance_events(event_id) ON DELETE CASCADE,
     topic TEXT NOT NULL,
     payload TEXT NOT NULL CHECK (json_valid(payload)),
-    published_at TEXT,
-    attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0)
+    published_at TEXT
 ) STRICT;

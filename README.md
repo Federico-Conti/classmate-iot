@@ -82,26 +82,26 @@ La configurazione in `infra/mosquitto/mosquitto.conf` abilita la persistenza dei
 | `classmate/v1/children/{childId}/events` | Node-RED | ParentApp | Sì, ultimo evento per bambino | classificazione `type` (`entry`/`exit`) |
 
 
-# Node-RED - core workflow
+## Node-RED
 
-Node-RED riceve la telemetria dal topic `classmate/v1/devices/+/telemetry` e la trasforma in eventi di ingresso o uscita solo quando la presenza è stabile:
+### core workflow
 
-1. **Validazione.** Interpreta il JSON e controlla schema, campi, tipi e intervalli (incluso l'RSSI tra `-127` e `0` dBm); verifica che il `deviceId` corrisponda al topic e scarta i campioni con `targetObserved=false`.
-2. **Identificazione.** Cerca l'assegnazione attiva del dispositivo a un bambino in SQLite. Registra l'ora di ricezione lato server e accetta solo le sequenze nuove per il boot corrente; scarta messaggi duplicati o fuori ordine. Mantiene una finestra RSSI e i contatori separati per dispositivo, azzerandoli quando cambiano il bambino associato o il `bootId`.
-3. **Elaborazione.** Accumula i campioni RSSI fino a riempire la finestra e calcola la media pesata, dando maggior peso a quelli più recenti. I campioni con finestra incompleta non vengono classificati.
-4. **Classificazione.** Confronta la media con la soglia per proporre `IN` o `OUT` e richiede valutazioni consecutive della stessa classe. Solo quando il candidato è stabile legge l'ultimo evento confermato del bambino: se la classe è cambiata, salva `entry` o `exit` insieme all'outbox in SQLite. L'outbox pubblica l'evento MQTT e ritenta in caso di mancata consegna; una classe già confermata non genera un duplicato.
+Node-RED riceve i dati inviati dal dispositivo e li trasforma in eventi di ingresso o uscita attraverso quattro passaggi:
 
-![Flusso di classificazione ingresso e uscita](./assets/inout.svg)
+1. **Validazione.** Controlla che i dati ricevuti siano corretti e utilizzabili, scartando quelli incompleti o non attendibili.
+2. **Identificazione.** Verifica a quale bambino è associato il dispositivo ed evita di elaborare rilevazioni già ricevute.
+3. **Elaborazione.** Calcola la media delle ultime rilevazioni del segnale, dando più importanza a quelle recenti. Così una singola variazione improvvisa influisce meno sul risultato.
+4. **Classificazione.** Stabilisce se il bambino è dentro o fuori dalla scuola e registra un evento solo quando il cambiamento è confermato, rendendolo disponibile all'app dei genitori.
 
-## Media pesata, finestra e soglie
+### media pesata
 
 I parametri si configurano in `infra/config/defaults.env` e vengono passati a Node-RED da Compose:
 
-| Parametro | Valore configurato | Effetto |
+| Parametro | Default | Effetto |
 | --- | --- | --- |
-| `RSSI_WINDOW_SIZE` | `10` | Numero di campioni nella finestra per dispositivo (ammessi `2`–`64`). |
-| `RSSI_THRESHOLD` | `-45` dBm | Confine fra `IN` e `OUT` (ammesso da `-127` a `0` dBm). |
-| `RSSI_STABILITY_COUNT` | `3` | Numero di ripetizioni consecutive del candidato dopo la prima valutazione (intero almeno `1`). |
+| `RSSI_WINDOW_SIZE` | `10` | Numero di campioni nella finestra per dispositivo |
+| `RSSI_THRESHOLD` | `-45` dBm | Confine fra `IN` e `OUT` |
+| `RSSI_STABILITY_COUNT` | `3` | Numero di ripetizioni consecutive del candidato dopo la prima valutazione |
 
 Nella finestra completa di `N` valori, ordinati dal più vecchio al più recente, il campione in posizione `i` (a partire da `1`) riceve peso `i`:
 
@@ -109,11 +109,10 @@ Nella finestra completa di `N` valori, ordinati dal più vecchio al più recente
 RSSI_pesato = (1·RSSI₁ + 2·RSSI₂ + … + N·RSSIₙ) / (N·(N+1)/2)
 ```
 
-Per esempio, con quattro campioni `-50, -48, -44, -42` dBm, il risultato è `(-50 - 96 - 132 - 168) / 10 = -44,6` dBm: il campione più recente pesa quattro volte il più vecchio. Dopo ogni calcolo la finestra elimina i primi `max(1, floor(N/3))` valori e conserva gli altri; con `N=10` elimina i tre più vecchi e attende tre nuovi campioni prima del calcolo successivo. Al cambio di boot o di assegnazione la finestra riparte vuota.
 
-Una media **strettamente maggiore** della soglia (`> -45` dBm) produce `IN`; una media uguale o inferiore produce `OUT`. Il primo candidato imposta il contatore a zero, ogni candidato uguale successivo lo incrementa e un cambio di classe lo azzera. Con `RSSI_STABILITY_COUNT=3` occorrono quindi **quattro classificazioni consecutive** uguali prima di verificare se registrare una transizione; dopo la conferma il contatore torna a zero. Non è prevista una banda di isteresi distinta dalla soglia.
+![Flusso di classificazione ingresso e uscita](./assets/inout.svg)
 
-## Schema SQLite e API
+## SQLite 
 
 `database/schema.sql` abilita i vincoli di associazione e l'accesso dati usa foreign key e WAL:
 
@@ -146,14 +145,3 @@ curl -sS -H 'x-parent-code: parent' \
 
 Gli eventi HTTP contengono `eventId`, `childId`, `deviceId`, `type`, `receivedAt`, `weightedRssi`. Usare `nextCursor` senza interpretarlo. L'accesso tramite codice **non è una password né un'autorizzazione robusta**; chi conosce il codice può leggere i dati associati nel POC.
 
-## Rete, limiti e accettazione
-
-Compose espone MQTT `1883` e Node-RED HTTP/editor `1880` solo su `POC_BIND_ADDRESS`. **L'editor è intenzionalmente raggiungibile dalla LAN fidata sulla stessa porta API.** Il firewall del PC deve limitare i client alla LAN POC e il router non deve inoltrare queste porte su Internet: il bind IP da solo non basta. La credenziale MQTT condivisa di `ParentApp` legge gli eventi di tutti i bambini ed è inclusa nell'APK; non è adatta a produzione o accesso remoto. Sono rinviati stati di disponibilità del wearable, batteria, autenticazione robusta, TLS pubblico, backup/ripristino SQLite e deployment NanoPi/ARM64.
-
-Per riprodurre il pilota in una LAN indipendente:
-
-1. Eseguire i passi di avvio, controllare `./infra/scripts/compose.sh ps`, `GET /healthz` e la risoluzione del codice. Per diagnosi: `./infra/scripts/compose.sh logs -f node-red mosquitto`.
-2. Avviare `entry-exit` in Wokwi, verificare telemetria, evento retained e stato ingresso/uscita in `ParentApp`; cambiare bambino senza ereditare lo stato precedente e aprire la cronologia solo su richiesta.
-3. Provare `target-not-observed` e `interruption`: lo stato confermato resta invariato. Provare nuovo boot, ripresa dello stesso boot, disconnessione LAN/Android e ricreazione dei container **senza eliminare i volumi**; gli eventi canonici non devono duplicarsi.
-
-Il **20 ottobre 2026** l'operatore ha riferito l'esito positivo complessivo di avvio/recupero Compose, accesso LAN, pilota Wokwi/Android, guasti, cutover senza Firebase, realtime e cronologia. Non sono stati forniti log di ogni singolo caso, indirizzi dei client, dettagli di fault injection o modello Android: questo resoconto non equivale a una nuova prova indipendente. Nella diagnosi realtime era emersa una password MQTT vuota nel build Android; impostare la proprietà Gradle utente ha risolto il problema e l'operatore ha confermato l'aggiornamento dello stato. Chi riproduce il POC deve eseguire i passi di verifica sul proprio ambiente.
