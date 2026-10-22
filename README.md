@@ -11,7 +11,7 @@ I genitori possono consultare lo stato e la cronologia degli eventi nell'app And
 
 ## 🚀 Quick Start
 
-Prerequisiti: Docker Compose, PlatformIO, VS Code con estensione Wokwi e Android Studio. Eseguire i comandi dalla radice di questo repository; `ParentApp` si trova nel repository Android separato, sul branch `iot`.
+Prerequisiti: Docker Compose, PlatformIO, VS Code con estensione Wokwi e Android Studio. 
 
 1. **Configurare host e credenziali.** Impostare l'IPv4 LAN del PC in `POC_BIND_ADDRESS` (`infra/config/defaults.env`) e in `mqttHost` (`firmware/include/wokwi_config.h`). Creare i tre file di password MQTT a partire dagli `.example` in `infra/secrets/`, sostituendo i contenuti con password distinte. Copiare `firmware/include/secrets.example.h` in `firmware/include/secrets.h` e impostare `device_secrets::mqttPassword` alla stessa password di `infra/secrets/mqtt_wearable_password`. 
 
@@ -31,13 +31,13 @@ Prerequisiti: Docker Compose, PlatformIO, VS Code con estensione Wokwi e Android
 
 Aprire la cartella `firmware/` in VS Code e avviare la simulazione Wokwi con il Private IoT Gateway attivo, così l'ESP32 su `Wokwi-GUEST` raggiunge il broker MQTT del PC. Dopo un cambio di profilo, ricompilare e riavviare la simulazione.
 
-1. **Avviare ParentApp su Android.** Nel repository Android separato aprire `ParentApp` in Android Studio. Nelle proprietà Gradle **utente** (`~/.gradle/gradle.properties`, non nel repository) impostare `pocHost` all'IPv4 LAN del PC, `pocMqttUsername=parent-poc` e `pocMqttPassword` alla password di `infra/secrets/mqtt_parent_password`. Compilare e avviare l'app su dispositivo o emulatore, poi loggarsi con il codice del seed (`parent`).
+1. **Avviare ParentApp su Android.** [Nel repository Android](https://github.com/Federico-Conti/classmate/tree/iot) separato aprire `ParentApp` in Android Studio. Nelle proprietà Gradle **utente** (`~/.gradle/gradle.properties`, non nel repository) impostare `pocHost` all'IPv4 LAN del PC, `pocMqttUsername=parent-poc` e `pocMqttPassword` alla password di `infra/secrets/mqtt_parent_password`. Compilare e avviare l'app su dispositivo o emulatore, poi loggarsi con il codice del seed (`parent`).
 
 **Nota:** PC con Compose, simulatore Wokwi tramite Private IoT Gateway e dispositivo Android devono potersi raggiungere sulla stessa LAN fidata.
 
 ## Architettura
 
-![Architettura ClassMate: telemetria dal wearable, elaborazione Node-RED ed eventi verso ParentApp](./assets/architettura.svg)
+![Architettura ClassMate](./assets/architettura.svg)
 
 Il flusso parte dal wearable simulato e arriva all'app dei genitori attraverso il broker MQTT. Ogni componente ha un ruolo distinto:
 
@@ -103,43 +103,44 @@ I parametri si configurano in `infra/config/defaults.env` e vengono passati a No
 | `RSSI_THRESHOLD` | `-45` dBm | Confine fra `IN` e `OUT` |
 | `RSSI_STABILITY_COUNT` | `3` | Numero di ripetizioni consecutive del candidato dopo la prima valutazione |
 
-Nella finestra completa di `N` valori, ordinati dal più vecchio al più recente, il campione in posizione `i` (a partire da `1`) riceve peso `i`:
+Nella finestra completa di `N` valori, ordinati dal più vecchio al più recente, il campione in posizione `i` (a partire da `1`) riceve peso `p_i = i`. La media pesata è la somma dei valori moltiplicati per i rispettivi pesi, divisa per la somma dei pesi:
 
-```text
-RSSI_pesato = (1·RSSI₁ + 2·RSSI₂ + … + N·RSSIₙ) / (N·(N+1)/2)
-```
+$$
+\overline{\mathrm{RSSI}} =
+\frac{\mathrm{RSSI}_1 p_1 + \mathrm{RSSI}_2 p_2 + \cdots + \mathrm{RSSI}_N p_N}
+{p_1 + p_2 + \cdots + p_N}
+= \frac{\sum_{i=1}^{N} (\mathrm{RSSI}_i \cdot p_i)}{\sum_{i=1}^{N} p_i}
+$$
+
+Con `p_i = i`, la misura più recente pesa di più; il divisore diventa `1 + 2 + … + N`:
+
+$$
+\overline{\mathrm{RSSI}} =
+\frac{1 \cdot \mathrm{RSSI}_1 + 2 \cdot \mathrm{RSSI}_2 + \cdots + N \cdot \mathrm{RSSI}_N}
+{1 + 2 + \cdots + N}
+$$
 
 
 ![Flusso di classificazione ingresso e uscita](./assets/inout.svg)
 
 ## SQLite 
 
-`database/schema.sql` abilita i vincoli di associazione e l'accesso dati usa foreign key e WAL:
+`database/schema.sql` definisce lo schema del database:
 
-| Tabella | Contenuto |
-| --- | --- |
-| `parents`, `children`, `parent_child` | Codici, bambini e associazioni attive |
-| `devices` | Assegnazione attiva uno-a-uno fra dispositivo e bambino |
-| `device_state` | Ultimo boot, sequenza e ricezione accettati |
-| `attendance_events` | `event_id`, `child_id`, `device_id`, `type`, `received_at`, `weighted_rssi` |
-| `event_outbox` | Topic, payload e stato dei retry MQTT |
+Tutti i genitori, bambini, legami e dispositivi presenti nel seed sono utilizzabili. `devices.child_id` è univoco: un bambino può avere al massimo un dispositivo assegnato. La modifica dello schema non migra i database SQLite già inizializzati; per usare il nuovo schema occorre riprovisionare un database vuoto.
 
-Lo stato corrente deriva dall'ultimo evento canonico del bambino: prima del primo evento è sconosciuto, non `OUT`. Non esistono `presence_state`, `occurred_at` o `evidence_json` nello schema. Cronologia ordinata per `received_at DESC, rowid DESC` e paginata con cursore opaco. SQLite non espone porte TCP.
+![Architettura ClassMate](./assets/schema-db.svg)
 
-Esempi API Node-RED, con il codice del seed dimostrativo:
+## ParentApp
 
-```sh
-curl -sS -X POST -H 'Content-Type: application/json' \
-  -d '{"code":"parent"}' http://192.168.1.49:1880/api/v1/parents/resolve
-curl -sS -H 'x-parent-code: parent' \
-  'http://192.168.1.49:1880/api/v1/children/child-001/events?limit=20'
-```
+ParentApp è l'app Android per i genitori. Dopo l'accesso con il codice previsto nel seed, recupera i bambini associati e permette di selezionare quello da seguire. La schermata iniziale mostra l'ultimo stato confermato — a scuola o fuori dalla scuola. Lo stato si aggiorna tramite i messaggi MQTT del bambino selezionato; la cronologia è consultabile tramite API HTTP, con caricamento progressivo degli eventi.
 
-| Metodo e percorso | Richiesta | Risposta |
-| --- | --- | --- |
-| `GET /healthz` | Nessuna | `200` con `status`, `service`, `database`; `503` se il database non è sano |
-| `POST /api/v1/parents/resolve` | JSON `{ "code": "..." }` | Genitore con `children`, oppure `404` `not_found` |
-| `GET /api/v1/children/:childId/events` | Header `x-parent-code`, query `limit` (default 20, massimo 100), `cursor` opzionale | `{ "events": [...], "nextCursor": null | "..." }` oppure `404` se non associato |
+Le schermate seguenti illustrano i due stati possibili e la vista cronologica. Le etichette mostrate sono in inglese nell'attuale interfaccia dell'app.
 
-Gli eventi HTTP contengono `eventId`, `childId`, `deviceId`, `type`, `receivedAt`, `weightedRssi`. Usare `nextCursor` senza interpretarlo. L'accesso tramite codice **non è una password né un'autorizzazione robusta**; chi conosce il codice può leggere i dati associati nel POC.
+<p align="center">
+  <img src="./assets/Screenshot_20260128-231625_parentapp.jpg" alt="ParentApp: bambino a scuola" width="260">
+  <img src="./assets/Screenshot_20260128-231948_parentapp.jpg" alt="ParentApp: bambino fuori dalla scuola" width="260">
+  <img src="./assets/Screenshot_20260128-231957_parentapp.jpg" alt="ParentApp: cronologia degli ingressi e delle uscite" width="260">
+</p>
 
+<p align="center"><em>Stato a scuola · Stato fuori dalla scuola · Cronologia degli eventi</em></p>
