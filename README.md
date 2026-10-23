@@ -5,9 +5,9 @@
 
 # 🎒ClassMate
 
-ClassMate è una PoC per rilevare l'ingresso e l'uscita dei bambini da scuola tramite un dispositivo IoT indossabile.
-Il dispositivo simulato invia dati di prossimità al sistema, che li elabora per registrare gli eventi di presenza.
-I genitori possono consultare lo stato e la cronologia degli eventi nell'app Andoid "ParentApp", per sapere quando il bambino entra o esce.
+ClassMate è un prototipo dimostrativo per rilevare l'ingresso e l'uscita dei bambini da scuola tramite un dispositivo IoT indossabile simulato.
+Il dispositivo genera valori sintetici di potenza del segnale Wi-Fi (RSSI), usati come indicatore di prossimità. Il sistema li elabora per registrare gli eventi di ingresso e uscita.
+I genitori possono consultare lo stato e la cronologia degli eventi nell'app Android ["ParentApp"](https://github.com/Federico-Conti/classmate/tree/iot), per sapere quando il bambino entra o esce.
 
 ## 🚀 Quick Start
 
@@ -22,18 +22,18 @@ Prerequisiti: Docker Compose, PlatformIO, VS Code con estensione Wokwi e Android
    ./infra/scripts/database.sh provision
    ```
 
-3. **Selezionare il profilo e compilare il wearable.** Impostare `syntheticProfile` in `firmware/include/wokwi_config.h` (predefinito `entry-exit`; [profili disponibili](#wokwi-esp32)), quindi:
+3. **Selezionare il profilo da simulare e compilare il wearable.** Impostare `syntheticProfile` in `firmware/include/wokwi_config.h` (predefinito `entry-exit`; [profili disponibili](#wokwi-esp32)), quindi:
 
    ```sh
    cd firmware
    pio run -e wokwi
    ```
 
-Aprire la cartella `firmware/` in VS Code e avviare la simulazione Wokwi con il Private IoT Gateway attivo, così l'ESP32 su `Wokwi-GUEST` raggiunge il broker MQTT del PC. Dopo un cambio di profilo, ricompilare e riavviare la simulazione.
+4. **Avviare la simulazione Wokwi.** Aprire la cartella `firmware/` in VS Code e avviare la simulazione del dispoitivo.
 
-1. **Avviare ParentApp su Android.** [Nel repository Android](https://github.com/Federico-Conti/classmate/tree/iot) separato aprire `ParentApp` in Android Studio. Nelle proprietà Gradle **utente** (`~/.gradle/gradle.properties`, non nel repository) impostare `pocHost` all'IPv4 LAN del PC, `pocMqttUsername=parent-poc` e `pocMqttPassword` alla password di `infra/secrets/mqtt_parent_password`. Compilare e avviare l'app su dispositivo o emulatore, poi loggarsi con il codice del seed (`parent`).
+5. **Avviare ParentApp su Android.** Aprire `ParentApp` in Android Studio. Nelle proprietà Gradle **utente** (`~/.gradle/gradle.properties`, non nel repository) impostare `pocHost` all'IPv4 LAN del PC, `pocMqttUsername=parent-poc` e `pocMqttPassword` alla password di `infra/secrets/mqtt_parent_password`. Compilare e avviare l'app su dispositivo o emulatore, poi loggarsi con il codice del seed (`parent`).
 
-**Nota:** PC con Compose, simulatore Wokwi tramite Private IoT Gateway e dispositivo Android devono potersi raggiungere sulla stessa LAN fidata.
+**Nota:** PC con Compose, simulatore Wokwie dispositivo Android devono potersi raggiungere sulla stessa LAN.
 
 ## Architettura
 
@@ -43,7 +43,7 @@ Il flusso parte dal wearable simulato e arriva all'app dei genitori attraverso i
 
 - **Wokwi ESP32 (`firmware/`)**: simula il dispositivo indossabile, produce campioni RSSI sintetici e pubblica la telemetria MQTT del proprio dispositivo.
 - **Mosquitto (`infra/`)**: è il broker MQTT; riceve la telemetria dall'ESP32 e la consegna a Node-RED, poi distribuisce gli eventi confermati a ParentApp. Le ACL limitano pubblicazione e sottoscrizione ai topic consentiti.
-- **Node-RED (`nodered/`)**: si sottoscrive alla telemetria, valida i messaggi, verifica l'associazione dispositivo-bambino e scarta sequenze duplicate. Calcola una media RSSI pesata, classifica la presenza e conferma le transizioni stabili; salva i nuovi eventi con l'outbox e li pubblica via MQTT con retry. Espone inoltre le API HTTP per codice genitore, elenco bambini e cronologia.
+- **Node-RED (`nodered/`)**: si sottoscrive alla telemetria, valida i messaggi, verifica l'associazione dispositivo-bambino e scarta sequenze duplicate. Calcola una [media RSSI pesata](#media-pesata), classifica la presenza e conferma le transizioni stabili; salva i nuovi eventi con l'outbox e li pubblica via MQTT con retry. Espone inoltre le API HTTP per codice genitore, elenco bambini e cronologia.
 - **SQLite (`database/`)**: conserva associazioni, stato dei dispositivi, eventi di ingresso/uscita e outbox per la pubblicazione affidabile. La cronologia è letta dalle API di Node-RED.
 - **ParentApp**: risolve il codice genitore e consulta la cronologia tramite HTTP; si sottoscrive via MQTT agli eventi del bambino selezionato per mostrare lo stato corrente, senza pubblicare messaggi.
 
@@ -52,7 +52,9 @@ Il flusso parte dal wearable simulato e arriva all'app dei genitori attraverso i
 
 L'ESP32 simulato in Wokwi rappresenta il dispositivo indossabile: genera campioni RSSI sintetici e, come **publisher MQTT**, invia la telemetria al broker Mosquitto. Il firmware è scritto in C++ con PlatformIO; la connessione Wi-Fi `Wokwi-GUEST` usa Wokwi Private IoT Gateway per raggiungere il broker sul PC.
 
-<img alt="ESP32 simulato in Wokwi" src="./assets/esp32.png" height="200">
+<p align="center">
+  <img alt="ESP32 simulato in Wokwi" src="./assets/esp32.png" height="200">
+</p>
 
 Per scegliere uno scenario, modificare `syntheticProfile` in `firmware/include/wokwi_config.h`, compilare con `pio run -e wokwi` dalla cartella `firmware/` e riavviare la simulazione. Il firmware genera un campione ogni secondo: per cambiare l'intervallo, modificare `SampleSchedule::periodMs` (in millisecondi, predefinito `1000`) in `firmware/include/sample_schedule.h`, poi ricompilare e riavviare la simulazione. I profili disponibili sono:
 
@@ -60,11 +62,11 @@ Per scegliere uno scenario, modificare `syntheticProfile` in `firmware/include/w
 | --- | --- |
 | `outside` | `-90, -88, -91, -89` dBm in ciclo; segnale debole |
 | `inside` | `-42, -40, -43, -41` dBm in ciclo; tutti sopra la soglia |
-| `entry-exit` (predefinito) | 30 campioni `inside`, poi 30 `outside`, in ciclo (circa 30 s per fase, prima del filtro) |
+| `entry-exit` (default) | 30 campioni `inside`, poi 30 `outside`, in ciclo|
 | `target-not-observed` | `targetObserved:false` e `rssiDbm:null` a ogni intervallo; il mancato rilevamento non genera un'uscita |
 | `interruption` | Tre campioni a `-55` dBm, poi nessuna pubblicazione e LED rosso; il silenzio non genera un'uscita |
 
-Per esempio, sul topic `classmate/v1/devices/esp32-001/telemetry` pubblica un payload JSON come questo (il `bootId` e l'uptime variano a ogni esecuzione):
+Per esempio, sul topic `classmate/v1/devices/esp32-001/telemetry` pubblica un payload JSON come questo (dove il `bootId` varia a ogni esecuzione):
 
 ```json
 {"schemaVersion":1,"deviceId":"esp32-001","bootId":"8b210baef3b139ac","sequence":2,"deviceUptimeMs":12805,"wifi":{"targetObserved":true,"rssiDbm":-91}}
@@ -84,8 +86,6 @@ La configurazione in `infra/mosquitto/mosquitto.conf` abilita la persistenza dei
 
 ## Node-RED
 
-### core workflow
-
 Node-RED riceve i dati inviati dal dispositivo e li trasforma in eventi di ingresso o uscita attraverso quattro passaggi:
 
 1. **Validazione.** Controlla che i dati ricevuti siano corretti e utilizzabili, scartando quelli incompleti o non attendibili.
@@ -93,15 +93,82 @@ Node-RED riceve i dati inviati dal dispositivo e li trasforma in eventi di ingre
 3. **Elaborazione.** Calcola la media delle ultime rilevazioni del segnale, dando più importanza a quelle recenti. Così una singola variazione improvvisa influisce meno sul risultato.
 4. **Classificazione.** Stabilisce se il bambino è dentro o fuori dalla scuola e registra un evento solo quando il cambiamento è confermato, rendendolo disponibile all'app dei genitori.
 
-### media pesata
+### Conferma di ingressi e uscite
 
 I parametri si configurano in `infra/config/defaults.env` e vengono passati a Node-RED da Compose:
 
-| Parametro | Default | Effetto |
+| Parametro | Default | Cosa rappresenta |
 | --- | --- | --- |
-| `RSSI_WINDOW_SIZE` | `10` | Numero di campioni nella finestra per dispositivo |
-| `RSSI_THRESHOLD` | `-45` dBm | Confine fra `IN` e `OUT` |
-| `RSSI_STABILITY_COUNT` | `3` | Numero di ripetizioni consecutive del candidato dopo la prima valutazione |
+| `RSSI_WINDOW_SIZE` | `10` | Numero di campioni RSSI conservati nella finestra mobile per ciascun dispositivo |
+| `RSSI_THRESHOLD` | `-45` dBm | Valore medio RSSI che separa lo stato `IN` dallo stato `OUT` |
+| `RSSI_STABILITY_COUNT` | `3` | Filtro di stabilità: richiede valutazioni consecutive uguali per confermare ingressi e uscite, evitando falsi positivi |
+
+L'algoritmo seguente mostra come la finestra mobile, la media pesata e il filtro di stabilità vengono combinati per confermare gli eventi di ingresso e uscita:
+
+```text
+STATE VARIABLES:
+    samples: List<Integer> = []          // RSSI samples buffer
+    currentState: State = OUT             // current proximity state
+    previousState: State = OUT            // previous proximity state
+    stableCount: Integer = 0              // stability counter
+
+CONSTANTS:
+    WINDOW_SIZE = 10
+    THRESHOLD_DBM = -45
+    STABLE_DECISIONS_NEEDED = 3
+    STATES = {IN, OUT}
+
+FUNCTION onNewRssiSample(levelDbm: Integer) -> String OR NULL:
+    // Step 1: Add the new sample to the window
+    samples.append(levelDbm)
+
+    // Step 2: Wait until there are enough samples
+    IF samples.length < WINDOW_SIZE THEN
+        RETURN NULL  // Not enough data yet
+    END IF
+
+    // Step 3: Calculate the weighted average of the samples
+    avg = weightedAverage(samples)
+
+    // Step 4: Update the state based on the threshold
+    previousState = currentState
+    IF avg > THRESHOLD_DBM THEN
+        currentState = IN   // Signal is strong enough: device is near
+    ELSE
+        currentState = OUT  // Signal is too weak: device is far
+    END IF
+
+    // Step 5: Update the stability counter
+    IF currentState != previousState THEN
+        stableCount = 0         // State changed: reset counter
+    ELSE
+        stableCount = stableCount + 1  // State unchanged: increment counter
+    END IF
+
+    // Step 6: Remove old samples (sliding window)
+    // Remove one third of the window to make room for new samples
+    removeCount = WINDOW_SIZE / 3
+    FOR i = 1 TO removeCount DO
+        IF samples is not empty THEN
+            samples.removeFirst()
+        END IF
+    END FOR
+
+    // Step 7: Check for a stable decision
+    IF stableCount == STABLE_DECISIONS_NEEDED THEN
+        stableCount = 0  // Reset counter for the next event
+
+        IF currentState == IN THEN
+            RETURN "entry"  // Confirmed entry event
+        ELSE
+            RETURN "exit"   // Confirmed exit event
+        END IF
+    END IF
+
+    // Step 8: State is not stable yet
+    RETURN NULL  // No event to report
+END FUNCTION
+```
 
 Nella finestra completa di `N` valori, ordinati dal più vecchio al più recente, il campione in posizione `i` (a partire da `1`) riceve peso `p_i = i`. La media pesata è la somma dei valori moltiplicati per i rispettivi pesi, divisa per la somma dei pesi:
 
@@ -127,13 +194,11 @@ $$
 
 `database/schema.sql` definisce lo schema del database:
 
-Tutti i genitori, bambini, legami e dispositivi presenti nel seed sono utilizzabili. `devices.child_id` è univoco: un bambino può avere al massimo un dispositivo assegnato. La modifica dello schema non migra i database SQLite già inizializzati; per usare il nuovo schema occorre riprovisionare un database vuoto.
-
 ![Architettura ClassMate](./assets/schema-db.svg)
 
 ## ParentApp
 
-ParentApp è l'app Android per i genitori. Dopo l'accesso con il codice previsto nel seed, recupera i bambini associati e permette di selezionare quello da seguire. La schermata iniziale mostra l'ultimo stato confermato — a scuola o fuori dalla scuola. Lo stato si aggiorna tramite i messaggi MQTT del bambino selezionato; la cronologia è consultabile tramite API HTTP, con caricamento progressivo degli eventi.
+ParentApp è l'app Android per i genitori. Dopo l'accesso con il codice previsto nel seed, recupera i bambini associati e permette di selezionare quello da seguire. La schermata iniziale mostra l'ultimo stato confermato a scuola o fuori dalla scuola. Lo stato si aggiorna tramite i messaggi MQTT del bambino selezionato; la cronologia è consultabile tramite API HTTP, con caricamento progressivo degli eventi.
 
 Le schermate seguenti illustrano i due stati possibili e la vista cronologica. Le etichette mostrate sono in inglese nell'attuale interfaccia dell'app.
 
@@ -142,5 +207,3 @@ Le schermate seguenti illustrano i due stati possibili e la vista cronologica. L
   <img src="./assets/Screenshot_20260128-231948_parentapp.jpg" alt="ParentApp: bambino fuori dalla scuola" width="260">
   <img src="./assets/Screenshot_20260128-231957_parentapp.jpg" alt="ParentApp: cronologia degli ingressi e delle uscite" width="260">
 </p>
-
-<p align="center"><em>Stato a scuola · Stato fuori dalla scuola · Cronologia degli eventi</em></p>
